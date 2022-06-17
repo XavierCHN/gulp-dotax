@@ -1,0 +1,36 @@
+{
+    "name": "gulp-dotax",
+    "version": "1.0.0",
+    "description": "A helper gulp plugin collection to help dota2 modding",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "engines": {
+        "node": ">=14"
+    },
+    "scripts": {
+        "prepublish": "tsc"
+    },
+    "keywords": [
+        "gulpplugin",
+        "dota2",
+        "panorama"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/XavierCHN/gulp-dotax.git"
+    },
+    "bugs": {
+        "url": "https://github.com/XavierCHN/gulp-dotax/issues"
+    },
+    "homepage": "https://github.com/XavierCHN/gulp-dotax#readme",
+    "author": "Xavier Tseng",
+    "license": "MIT",
+    "devDependencies": {
+        "typescript": "^2.7.2"
+    },
+    "dependencies": {
+        "gulp": "^4.0.2",
+        "through2": "^4.0.2",
+        "vinyl": "^2.2.1"
+    }
+}

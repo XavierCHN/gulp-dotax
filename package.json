@@ -2,13 +2,41 @@
     "name": "gulp-dotax",
     "version": "1.0.0",
     "description": "A helper gulp plugin collection to help dota2 modding",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "main": "./lib/index.js",
+    "types": "./typings/index.d.ts",
+    "files": [
+        "lib/",
+        "typings/",
+        "src/",
+        "test/"
+    ],
     "engines": {
         "node": ">=14"
     },
     "scripts": {
-        "prepublish": "tsc"
+        "build": "npm run build:typings && npm run build:lib",
+        "build:lib": "tsc",
+        "build:typings": "tsc --project ./tsconfig.json --target esnext --module commonjs --outDir ./typings --emitDeclarationOnly",
+        "lint": "tslint -c tslint.json ./src/**/*.ts && tsc --noEmit",
+        "prepublishOnly": "npm run build"
+    },
+    "publishConfig": {
+        "registry": "https://registry.npmjs.org",
+        "access": "public"
+    },
+    "eslintConfig": {
+        "extends": [
+            "plugin:@typescript-eslint/recommended",
+            "plugin:prettier/recommended"
+        ],
+        "parser": "@typescript-eslint/parser",
+        "rules": {}
+    },
+    "prettier": {
+        "semi": false,
+        "singleQuote": true,
+        "printWidth": 200,
+        "tabWidth": 4
     },
     "keywords": [
         "gulpplugin",

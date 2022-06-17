@@ -33,7 +33,7 @@
         "rules": {}
     },
     "prettier": {
-        "semi": false,
+        "semi": true,
         "singleQuote": true,
         "printWidth": 200,
         "tabWidth": 4
@@ -54,10 +54,14 @@
     "author": "Xavier Tseng",
     "license": "MIT",
     "devDependencies": {
+        "@types/through2": "^2.0.36",
+        "@types/vinyl": "^2.0.6",
         "typescript": "^2.7.2"
     },
     "dependencies": {
         "gulp": "^4.0.2",
+        "node-xlsx": "^0.21.0",
+        "pinyin-pro": "^3.10.1",
         "through2": "^4.0.2",
         "vinyl": "^2.2.1"
     }

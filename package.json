@@ -1,0 +1,77 @@
+{
+    "name": "gulp-dotax",
+    "version": "1.0.0",
+    "description": "A helper gulp plugin collection to help dota2 modding",
+    "main": "./lib/index.js",
+    "types": "./typings/index.d.ts",
+    "files": [
+        "lib/",
+        "typings/",
+        "src/"
+    ],
+    "engines": {
+        "node": ">=14"
+    },
+    "scripts": {
+        "build": "tsc"
+    },
+    "publishConfig": {
+        "registry": "https://registry.npmjs.org",
+        "access": "public"
+    },
+    "eslintConfig": {
+        "extends": [
+            "plugin:@typescript-eslint/recommended",
+            "plugin:prettier/recommended"
+        ],
+        "parser": "@typescript-eslint/parser",
+        "rules": {}
+    },
+    "prettier": {
+        "semi": true,
+        "singleQuote": true,
+        "printWidth": 100,
+        "tabWidth": 4
+    },
+    "keywords": [
+        "gulpplugin",
+        "dota2",
+        "panorama"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/XavierCHN/gulp-dotax.git"
+    },
+    "bugs": {
+        "url": "https://github.com/XavierCHN/gulp-dotax/issues"
+    },
+    "homepage": "https://github.com/XavierCHN/gulp-dotax#readme",
+    "author": "Xavier Tseng",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/fs-extra": "^9.0.13",
+        "@types/gulp": "^4.0.9",
+        "@types/lodash": "^4.14.182",
+        "@types/through2": "^2.0.36",
+        "@types/vinyl": "^2.0.6",
+        "ts-node": "^10.8.1",
+        "typescript": "^2.7.2"
+    },
+    "dependencies": {
+        "anymatch": "^3.1.2",
+        "csv-stringify": "^6.1.3",
+        "fs-extra": "^10.1.0",
+        "gulp": "^4.0.2",
+        "json-to-ts": "^1.7.0",
+        "json5": "^2.2.1",
+        "keyvalues-node": "0.0.2",
+        "lodash": "^4.17.21",
+        "node-xlsx": "^0.21.0",
+        "pinyin-pro": "^3.10.1",
+        "plugin-error": "^1.0.1",
+        "read-csv-sync": "^1.0.7",
+        "steam-game-path": "^2.0.1",
+        "through2": "^4.0.2",
+        "vinyl": "^2.2.1"
+    }
+}

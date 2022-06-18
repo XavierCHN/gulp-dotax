@@ -13,8 +13,7 @@
         "node": ">=14"
     },
     "scripts": {
-        "build": "tsc",
-        "prepublishOnly": "npm run build"
+        "build": "tsc"
     },
     "publishConfig": {
         "registry": "https://registry.npmjs.org",

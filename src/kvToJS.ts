@@ -55,7 +55,7 @@ export function kvToJS(options: KVToJSOptions) {
             const kvKeys = Object.keys(kv);
             const kvData = kvKeys.length === 1 ? kv[kvKeys[0]] : kv;
             mergedFile[jsName] = kvData;
-            next(null, file);
+            next();
         } catch (err) {
             return this.emit('error', new PluginError(PLUGIN_NAME, err));
         }
@@ -63,29 +63,36 @@ export function kvToJS(options: KVToJSOptions) {
 
     function endStream() {
         if (!firstFile) return this.emit(`end`);
-        const contents = `${jsMountPoint} = ${JSON5.stringify(mergedFile, null, 2)}`;
-        const output = new Vinyl({
-            cwd: firstFile.cwd,
-            base: firstFile.base,
-            path: path.join(firstFile.base, fileName),
-            contents: Buffer.from(contents)
-        });
-        this.emit(`data`, output);
-
-        // if types is true, add typings
-        if (types) {
-            let types = JsonToTS(mergedFile);
-            types[0] = types[0].split('\n').map((t, i) => i == 0 ? `declare interface ${jsMountPointTypingName} {` : t).join('\n');
-            const typesOutput = new Vinyl({
+        try {
+            const contents = `${jsMountPoint} = ${JSON5.stringify(mergedFile, null, 2)}`;
+            const output = new Vinyl({
                 cwd: firstFile.cwd,
-                base: `${fileName}.d.ts`,
-                path: path.join(firstFile.base, `${fileName}.d.ts`),
-                contents: Buffer.from(types.join("\n"))
+                base: firstFile.base,
+                path: path.join(firstFile.base, fileName),
+                contents: Buffer.from(contents)
             });
-            this.emit(`data`, typesOutput);
-        }
+            this.emit(`data`, output);
 
-        this.emit(`end`);
+            // if types is true, add typings
+            if (types) {
+                console.log(`${PLUGIN_NAME} Begin to generate typings, please wait!`);
+                let types = JsonToTS(mergedFile);
+                types[0] = types[0].split('\n').map((t, i) => i == 0 ? `declare interface ${jsMountPointTypingName} {` : t).join('\n');
+                let typingsFileName = `${fileName}.d.ts`;
+                console.log(`${PLUGIN_NAME} writing typings to ${typingsFileName}`);
+                const typesOutput = new Vinyl({
+                    cwd: firstFile.cwd,
+                    base: firstFile.base,
+                    path: typingsFileName,
+                    contents: Buffer.from(types.join("\n"))
+                });
+                this.emit(`data`, typesOutput);
+            }
+
+            this.emit(`end`);
+        } catch (err) {
+            this.emit('error', new PluginError(PLUGIN_NAME, err));
+        }
     }
 
     return through.obj(parseKV, endStream);

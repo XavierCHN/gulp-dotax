@@ -217,10 +217,13 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
         const addonFiles = glob.sync(`${localizationOutPath}/*.txt`);
         // if there are extra languages, push them to the languages array
         addonFiles.forEach(addonFileName => {
-            const data = keyvalues.decode(fs.readFileSync(addonFileName, 'utf-8').toString());
-            const language = data.lang.Language;
+            let fileContent = fs.readFileSync(addonFileName, 'utf-8').toString();
+            // deal with the \n in the file
+            fileContent = fileContent.replace(/\\n/g, '___x___combine____n___');
+            const data = keyvalues.decode(fileContent);
+            const language = data.lang.Language.trim();
             languages = _.uniq(_.concat(languages, language));
-            languageData[language] = data.lang.Tokens;
+            languageData[language] = data.lang.Tokens || {};
         });
 
         // 读取addon.csv中已经修改的内容
@@ -232,13 +235,15 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
                 Object.keys(row).forEach(key => {
                     if (key == "Tokens") {
                     } else {
-                        let value = row[key];
-                        languages = _.uniq(_.concat(languages, key));
+                        let language = key.trim();
+                        let value = row[language];
+                        languages = _.uniq(_.concat(languages, language));
                         if (value != null && value != undefined && value != "") {
-                            if (languageData[key][token] !== null && languageData[key][token] !== undefined && languageData[key][token] != "") {
+                            if (languageData[language] != null && languageData[language][token] !== null && languageData[language][token] !== undefined && languageData[key][token] != "") {
                                 if (verbose) console.log(`addon_${key.toLowerCase()}.txt ${token} ${key} ${languageData[key][token]} is overwritten by ${value}`);
                             }
-                            languageData[key][token] = value;
+                            languageData[language] = languageData[language] || {};
+                            languageData[language][token] = value.replace("\\n", "___x___combine____n___");
                         }
                     }
                 });
@@ -265,29 +270,14 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
                     Tokens: languageData[lang]
                 }
             };
-            const fileContent = keyvalues.encode(data);
+            console.log(`iot`, data.lang.Tokens.dota_tooltip_ability_chess_ability_pao_xiao);
+            const fileContent = keyvalues.encode(data).replace(/___x___combine____n___/g, "\\n");
             const fileName = `addon_${lang.toLocaleLowerCase()}.txt`;
+            console.log(`write ${fileName}`);
             this.emit(`data`, new Vinyl({
                 path: fileName,
                 contents: Buffer.from(fileContent)
             }));
-        });
-
-
-        Object.keys(languageData).forEach(language => {
-            // put the language data into addon_{language}.txt
-            let content = keyvalues.encode({
-                lang: {
-                    Language: language,
-                    Tokens: languageData[language]
-                }
-            });
-
-            const languageFile = new Vinyl({
-                path: `addon_${language.toLowerCase()}.txt`,
-                contents: Buffer.from(content)
-            });
-            this.emit("data", languageFile);
         });
 
         // write addon.csv file to the stream
@@ -302,7 +292,7 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
             });
             csvContent.push(row);
         });
-        const stringCsvContent = stringify(csvContent);
+        const stringCsvContent = stringify(csvContent).replace(/___x___combine____n___/g, "\\n");
         const csvFile = new Vinyl({
             path: "addon.csv",
             contents: Buffer.from(stringCsvContent)

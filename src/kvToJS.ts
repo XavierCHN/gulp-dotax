@@ -10,7 +10,6 @@ const keyvalues = require("keyvalues-node");
 const PLUGIN_NAME = `gulp-dotax:kvToJS`;
 
 export interface KVToJSOptions {
-    kvDir: string;
     fileName?: string;
     edit?: (json: object) => object;
     transform?: (json: object) => object;
@@ -22,7 +21,6 @@ export interface KVToJSOptions {
 
 export function kvToJS(options: KVToJSOptions) {
     const {
-        kvDir,
         fileName = "sync_keyvalues.js",
         types = true,
         jsMountPoint = "GameUI.CustomUIConfig()",
@@ -32,10 +30,6 @@ export function kvToJS(options: KVToJSOptions) {
     let firstFile: Vinyl = null;
     let mergedFile = {} as any;
     function parseKV(file: Vinyl, enc: any, next: Function) {
-        if (kvDir === undefined) {
-            throw new PluginError(PLUGIN_NAME, "kvDir is required");
-        }
-
         if (file.isNull()) {
             return this.queue(file); // pass along
         }
@@ -48,7 +42,7 @@ export function kvToJS(options: KVToJSOptions) {
 
         try {
             const kv = keyvalues.decode(file.contents.toString());
-            const relativePath = path.relative(options.kvDir, file.path);
+            const relativePath = path.relative(path.dirname(firstFile.path), file.path);
             const extname = path.extname(relativePath);
             const jsName = relativePath.replace(/\\|\//g, "_").replace(extname, "");
             // if kv has only one key, get the content of the key

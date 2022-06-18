@@ -2,19 +2,32 @@
 import through2 from 'through2';
 import xlsx from 'node-xlsx';
 import Vinyl from 'vinyl';
-import { pinyin } from 'pinyin-pro';
+import { pinyin, customPinyin } from 'pinyin-pro';
+
+const PLUGIN_NAME = 'gulp-dotax:sheetToKV';
 
 export interface SheetToKVOptions {
     sheetsIgnore?: string;
     verbose?: boolean;
     chineseToPinyin?: boolean;
+    customPinyins?: Record<string, string>;
     indent?: string;
     autoSimpleKV?: boolean;
     kvFileExt?: string;
 }
 
 export function sheetToKV(options: SheetToKVOptions) {
-    const { sheetsIgnore = /^\s*$/, verbose = false, autoSimpleKV = true, kvFileExt = '.txt', chineseToPinyin = true, indent = '    ' } = options;
+    const {
+        customPinyins = {},
+        sheetsIgnore = /^\s*$/,
+        verbose = false,
+        autoSimpleKV = true,
+        kvFileExt = '.txt',
+        chineseToPinyin = true,
+        indent = '    '
+    } = options;
+
+    customPinyin(customPinyins);
 
     function convert_chinese_to_pinyin(da: string) {
         if (da == null || da.match == null) return da;
@@ -123,27 +136,32 @@ export function sheetToKV(options: SheetToKVOptions) {
 
     function convert(this: any, file: Vinyl, enc: any, callback: Function) {
         if (file.isNull()) return callback(null, file);
-        if (file.isStream()) return callback(new Error(`sheet_to_kv: Streaming not supported`));
+        if (file.isStream()) return callback(new Error(`${PLUGIN_NAME} Streaming not supported`));
         if (file.basename.startsWith(`~$`)) {
-            console.log(`ignore empty kv file ${file.basename}`);
+            console.log(`${PLUGIN_NAME} Ignore empty kv file ${file.basename}`);
+            return;
+        }
+        // ignore files that are not xlsx,xls
+        if (!file.basename.endsWith(`.xlsx`) && !file.basename.endsWith(`.xls`)) {
+            console.log(`${PLUGIN_NAME} ignore non-xlsx file ${file.basename}`);
             return;
         }
 
         if (file.isBuffer()) {
-            console.log(`sheet_to_kv: Converting ${file.path} to kv`);
+            console.log(`${PLUGIN_NAME} Converting ${file.path} to kv`);
             const workbook = xlsx.parse(file.contents);
             workbook.forEach((sheet) => {
                 let sheet_name = sheet.name;
 
 
                 if (new RegExp(sheetsIgnore).test(sheet_name)) {
-                    console.log(`sheet_to_kv: Ignoring sheet ${sheet_name} in workbook ${file.path}`);
+                    console.log(`${PLUGIN_NAME} Ignoring sheet ${sheet_name} in workbook ${file.path}`);
                     return;
                 }
 
                 // 如果名称中包含中文，那么弹出一个提示，说可以把中文名称的表格忽略
                 if (sheet_name.match(/[\u4e00-\u9fa5]+/g)) {
-                    console.log(`sheet_to_kv: Warning: ${sheet_name} 包含中文，将其转换为英文输出`);
+                    console.log(`${PLUGIN_NAME} Warning: ${sheet_name} 包含中文，将其转换为英文输出`);
                     console.log(`如果你不想输出这个表，请将其名称加入sheetsIgnore中`);
                     sheet_name = convert_chinese_to_pinyin(sheet_name);
                 }
@@ -152,7 +170,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                 const sheet_data_length = sheet_data.length;
                 if (sheet_data_length === 0) {
                     if (verbose) {
-                        console.log(`sheet_to_kv: Ignoring empty sheet ${sheet_name} in workbook ${file.path}`);
+                        console.log(`${PLUGIN_NAME} Ignoring empty sheet ${sheet_name} in workbook ${file.path}`);
                     }
                     return;
                 }
@@ -162,7 +180,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                 const kv_data_length = kv_data.length;
                 if (kv_data_length === 0) {
                     if (verbose) {
-                        console.log(`sheet_to_kv: Ignoring no data sheet ${sheet_name} in workbook ${file.path}`);
+                        console.log(`${PLUGIN_NAME} Ignoring no data sheet ${sheet_name} in workbook ${file.path}`);
                     }
                     return;
                 }
@@ -193,6 +211,7 @@ ${kv_data_str}
 
                 const new_path = `${sheet_name}${kvFileExt}`;
 
+                console.log(`${PLUGIN_NAME} Writing sheet content to ${new_path}`);
                 const kv_file = new Vinyl({
                     path: new_path,
                     contents: Buffer.from(out_put),

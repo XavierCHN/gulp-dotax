@@ -1,4 +1,3 @@
-import mergeWith from 'lodash/mergeWith';
 import JSON5 from 'json5';
 import path from "path";
 import PluginError from 'plugin-error';

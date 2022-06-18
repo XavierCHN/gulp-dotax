@@ -7,8 +7,7 @@
     "files": [
         "lib/",
         "typings/",
-        "src/",
-        "test/"
+        "src/"
     ],
     "engines": {
         "node": ">=14"

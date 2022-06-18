@@ -97,7 +97,7 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
         exportAbilityValues = true,
         exportKVModifiers = true,
         verbose,
-    } = options ?? {};
+    } = options || {};
 
     let localizationTokens: string[] = [];
     if (csvOutPath === undefined) csvOutPath = localizationOutPath;
@@ -130,7 +130,7 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
                     }
 
                     let prefix = "";
-                    if (customPrefix) prefix = customPrefix(itemKey, itemValue) ?? "";
+                    if (customPrefix) prefix = customPrefix(itemKey, itemValue) || "";
                     else {
                         // 提供一些默认的前缀
                         if (/[item_|ability_]_[datadriven|lua]/.test(baseClass)) {
@@ -217,7 +217,7 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
         // if there are extra languages, push them to the languages array
         addonFiles.forEach(addonFileName => {
             const data = keyvalues.decode(fs.readFileSync(addonFileName, 'utf-8').toString());
-            const language = data?.lang?.Language;
+            const language = data.lang.Language;
             languages = _.uniq(_.concat(languages, language));
             languageData[language] = data.lang.Tokens;
         });

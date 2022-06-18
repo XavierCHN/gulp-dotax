@@ -5,7 +5,7 @@ import Vinyl from 'vinyl';
 import { pinyin } from 'pinyin-pro';
 
 export interface SheetToKVOptions {
-    sheetsIgnore?: RegExp;
+    sheetsIgnore?: string;
     verbose?: boolean;
     chineseToPinyin?: boolean;
     indent?: string;
@@ -55,7 +55,7 @@ export function sheetToKV(options: SheetToKVOptions) {
             key_row
                 .map((key, i) => {
                     // 缩进
-                    let indentStr = (indent ?? `\t`).repeat(indentLevel);
+                    let indentStr = (indent || `\t`).repeat(indentLevel);
 
                     // 第一列为主键
                     if (i == 0) {
@@ -100,7 +100,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                     }
                     if (key.includes('[}]')) {
                         indentLevel--;
-                        indentStr = (indent ?? `\t`).repeat(indentLevel);
+                        indentStr = (indent || `\t`).repeat(indentLevel);
                         return `${indentStr}}`;
                     }
 
@@ -131,7 +131,7 @@ export function sheetToKV(options: SheetToKVOptions) {
             const workbook = xlsx.parse(file.contents);
             workbook.forEach((sheet) => {
                 const sheet_name = sheet.name;
-                if (sheetsIgnore.test(sheet_name)) {
+                if (new RegExp(sheetsIgnore).test(sheet_name)) {
                     if (verbose) {
                         console.log(`sheet_to_kv: Ignoring sheet ${sheet_name} in workbook ${file.path}`);
                     }

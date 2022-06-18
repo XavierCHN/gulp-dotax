@@ -1,13 +1,9 @@
 const gulp = require('gulp');
 const { kvToJS } = require('./lib/kvToJS');
+const { kvToLocalization } = require('./lib/kvToLocalization');
 
 gulp.task(`default`, (callback) => {
-    gulp.src('./npc/**/*.{txt,kv}')
-        .pipe(
-            kvToJS({
-                kvDir: './npc',
-            })
-        )
-        .pipe(gulp.dest('./kv/'));
+    gulp.src('./npc/npc_abilities.txt')
+        .pipe(kvToLocalization('./npc', {}))
     callback();
 });

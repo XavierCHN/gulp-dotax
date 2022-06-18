@@ -85,11 +85,14 @@ export function kvToLocalize(localizationOutPath: string, options: KVToLocalizat
         customSuffix,
         customToken,
         transformTokenName: transformTokenNames,
+        exportAbilityValues = true,
+        exportKVModifiers = true,
         verbose,
     } = options;
 
     let localizationTokens: string[] = [];
     if (csvOutPath === undefined) csvOutPath = localizationOutPath;
+    let specialKeys: string[] = [];
 
     function parseKV(file: Vinyl, _: any, next: Function) {
         if (file.isNull()) {
@@ -127,6 +130,32 @@ export function kvToLocalize(localizationOutPath: string, options: KVToLocalizat
                         // 提供一些默认的后缀
                         if (/[item_|ability_]_[datadriven|lua]/.test(baseClass)) {
                             suffix = _.uniq(_.concat(suffix, "_description"));
+
+                            // 技能的AbilityValues和AbilitySpecials的处理
+                            if (exportAbilityValues) {
+                                let abilityValues = itemValue.AbilityValues;
+                                if (abilityValues) {
+                                    suffix = _.uniq(_.concat(suffix, Object.keys(abilityValues).map(s => `_${s}`)));
+                                }
+                                let abilitySpeicals = itemValue.AbilitySpecials;
+                                if (abilitySpeicals) {
+                                    Object.keys(abilitySpeicals).forEach(data => {
+                                        const abilitySpecial = abilitySpeicals[data];
+                                        Object.keys(abilitySpecial).forEach(s => {
+                                            if (
+                                                ![
+                                                    "var_type",
+                                                    "LinkedSpecialBonus",
+
+                                                ].includes(s)
+                                            ) {
+                                                suffix = _.uniq(_.concat(suffix, `_${s}`));
+                                                specialKeys = _.uniq(_.concat(specialKeys, `"_${s}"`));
+                                            }
+                                        });
+                                    });
+                                }
+                            }
                         }
                     }
 
@@ -135,6 +164,19 @@ export function kvToLocalize(localizationOutPath: string, options: KVToLocalizat
                     if (customToken != null) {
                         let extraToekens = customToken(itemKey, itemValue);
                         tokens = _.uniq(_.concat(tokens, extraToekens));
+                    }
+
+                    // KV Modifiers的处理
+                    if (exportKVModifiers) {
+                        let modifiers = itemValue.Modifiers;
+                        if (modifiers) {
+                            Object.keys(modifiers).forEach(modifierName => {
+                                tokens = _.uniq(_.concat(tokens,
+                                    `dota_tooltip_modifier_${modifierName}`,
+                                    `dota_tooltip_modifier_${modifierName}_description`,
+                                ));
+                            });
+                        }
                     }
 
                     if (transformTokenNames != null) {

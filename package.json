@@ -14,10 +14,7 @@
         "node": ">=14"
     },
     "scripts": {
-        "build": "npm run build:typings && npm run build:lib",
-        "build:lib": "tsc",
-        "build:typings": "tsc --project ./tsconfig.json --target esnext --module commonjs --outDir ./typings --emitDeclarationOnly",
-        "lint": "tslint -c tslint.json ./src/**/*.ts && tsc --noEmit",
+        "build": "tsc",
         "prepublishOnly": "npm run build"
     },
     "publishConfig": {

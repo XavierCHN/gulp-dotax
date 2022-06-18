@@ -58,7 +58,7 @@ export function kvToJS(options: KVToJSOptions) {
     function endStream() {
         if (!firstFile) return this.emit(`end`);
         try {
-            const contents = `${jsMountPoint} = ${JSON5.stringify(mergedFile, null, 2)}`;
+            const contents = `${Object.keys(mergedFile).map(name => { return `${jsMountPoint}.${name} = ${JSON.stringify(mergedFile[name])}\n`; })}`;
             const output = new Vinyl({
                 cwd: firstFile.cwd,
                 base: firstFile.base,

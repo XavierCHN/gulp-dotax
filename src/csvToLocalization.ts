@@ -1,24 +1,21 @@
 import through2 from "through2";
 import Vinyl from "vinyl";
-import xlsx from "node-xlsx";
+const { readCSVSync } = require("read-csv-sync");
 const keyvalues = require("keyvalues-node");
 
-const PLUGIN_NAME = `gulp-dotax:csvToLocalization`;
-
-export function convertCSVToLocalization(contents: string): Record<string, Record<string, string>> {
-    const workbook = xlsx.parse(contents);
-    const [sheet] = workbook;
-    const data = sheet.data as string[][];
-    const languages = data[0].slice(1);
-    const localizationData = data.slice(1);
+export function convertCSVToLocalization(file: Vinyl): Record<string, Record<string, string>> {
+    const data = readCSVSync(file.path) as Record<string, string>[];
     let languageData: Record<string, Record<string, string>> = {};
-    languages.forEach((language, index) => {
-        languageData[language] = {};
-        localizationData.forEach(row => {
-            const token = row[0];
-            const cell = row[index];
-            if (cell && cell !== null && cell !== undefined && cell !== "") {
-                languageData[language][token] = cell;
+    Object.keys(data[0]).forEach(s => { if (s !== `Tokens`) languageData[s] = {}; });
+    data.forEach(row => {
+        let token = row.Tokens;
+        Object.keys(row).forEach(key => {
+            if (key !== `Tokens`) {
+                let lang = key.trim();
+                let value = row[lang];
+                if (value != null && value != undefined && value !== "") {
+                    languageData[lang][token] = `"${value.replace("\\n", "___x___combine____n___")}"`;
+                }
             }
         });
     });
@@ -26,7 +23,7 @@ export function convertCSVToLocalization(contents: string): Record<string, Recor
 }
 
 export function convert(file: Vinyl, enc: any, next: Function) {
-    let data = convertCSVToLocalization(file.contents.toString());
+    let data = convertCSVToLocalization(file);
     Object.keys(data).forEach(language => {
         // put the language data into addin_{language}.txt
         let content = keyvalues.encode({

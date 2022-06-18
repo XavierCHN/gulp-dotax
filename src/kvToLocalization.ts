@@ -131,7 +131,7 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
 
                     let prefix = "";
                     if (customPrefix) prefix = customPrefix(itemKey, itemValue) || "";
-                    else {
+                    if (prefix === "") {
                         // 提供一些默认的前缀
                         if (/[item_|ability_]_[datadriven|lua]/.test(baseClass)) {
                             prefix = "dota_tooltip_ability_";
@@ -144,7 +144,8 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
                         if (customSuffixValue) {
                             suffix = _.uniq(_.concat(suffix, customSuffixValue));
                         }
-                    } else {
+                    }
+                    if (suffix === [""]) {
                         // 提供一些默认的后缀
                         if (/[item_|ability_]_[datadriven|lua]/.test(baseClass)) {
                             suffix = _.uniq(_.concat(suffix, "_description"));

@@ -37,7 +37,7 @@ export function convert(file: Vinyl, enc: any, next: Function) {
         });
 
         const languageFile = new Vinyl({
-            path: `addin_${language.toLowerCase()}.txt`,
+            path: `addon_${language.toLowerCase()}.txt`,
             contents: Buffer.from(content)
         });
         this.emit("data", languageFile);

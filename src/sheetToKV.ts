@@ -54,6 +54,9 @@ export function sheetToKV(options: SheetToKVOptions) {
         return (
             key_row
                 .map((key, i) => {
+                    // 跳过没有的key
+                    if (key == null || key == undefined || key == ``) return;
+
                     // 缩进
                     let indentStr = (indent || `\t`).repeat(indentLevel);
 
@@ -130,12 +133,19 @@ export function sheetToKV(options: SheetToKVOptions) {
             console.log(`sheet_to_kv: Converting ${file.path} to kv`);
             const workbook = xlsx.parse(file.contents);
             workbook.forEach((sheet) => {
-                const sheet_name = sheet.name;
+                let sheet_name = sheet.name;
+
+
                 if (new RegExp(sheetsIgnore).test(sheet_name)) {
-                    if (verbose) {
-                        console.log(`sheet_to_kv: Ignoring sheet ${sheet_name} in workbook ${file.path}`);
-                    }
+                    console.log(`sheet_to_kv: Ignoring sheet ${sheet_name} in workbook ${file.path}`);
                     return;
+                }
+
+                // 如果名称中包含中文，那么弹出一个提示，说可以把中文名称的表格忽略
+                if (sheet_name.match(/[\u4e00-\u9fa5]+/g)) {
+                    console.log(`sheet_to_kv: Warning: ${sheet_name} 包含中文，将其转换为英文输出`);
+                    console.log(`如果你不想输出这个表，请将其名称加入sheetsIgnore中`);
+                    sheet_name = convert_chinese_to_pinyin(sheet_name);
                 }
 
                 const sheet_data = sheet.data as string[][];
@@ -147,7 +157,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                     return;
                 }
 
-                const key_row = sheet_data[1]; // 第二行为key行
+                let key_row = sheet_data[1].map(i => i.toString()); // 第二行为key行
                 const kv_data = sheet_data.slice(2);
                 const kv_data_length = kv_data.length;
                 if (kv_data_length === 0) {

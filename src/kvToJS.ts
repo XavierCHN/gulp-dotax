@@ -78,12 +78,15 @@ export function kvToJS(options: KVToJSOptions) {
                 console.log(`${PLUGIN_NAME} Begin to generate typings, please wait!`);
                 let types = JsonToTS(mergedFile);
                 types[0] = types[0].split('\n').map((t, i) => i == 0 ? `declare interface ${jsMountPointTypingName} {` : t).join('\n');
+                for (let i = 1; i < types.length; i++) {
+                    types[i] = `declare ${types[i]}`;
+                }
                 let typingsFileName = `${fileName}.d.ts`;
                 console.log(`${PLUGIN_NAME} writing typings to ${typingsFileName}`);
                 const typesOutput = new Vinyl({
                     cwd: firstFile.cwd,
                     base: firstFile.base,
-                    path: typingsFileName,
+                    path: path.join(firstFile.base, typingsFileName),
                     contents: Buffer.from(types.join("\n"))
                 });
                 this.emit(`data`, typesOutput);

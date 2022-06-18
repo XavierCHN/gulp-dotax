@@ -154,17 +154,29 @@ export function updateLocalFilesFromCSV(
     // convert language data to csv data
     // csv data format:
     // [{Tokens: token, SChinese: value, English: value, ...}]
-    Object.entries(languageData).forEach(([lang, tokens]) => {
-        Object.entries(tokens).forEach(([token, value]) => {
-            if (!csvData.find((s) => s.Tokens === token)) {
-                csvData.push({
+    Object.keys(languageData).forEach((lang) => {
+        const langD = languageData[lang];
+        Object.keys(langD).forEach((token) => {
+            let tokenItem = csvData.find((item) => item.Tokens === token);
+            if (tokenItem == null) {
+                tokenItem = {
                     Tokens: token,
-                    [lang]: value,
-                });
-            } else {
-                csvData.find((s) => s.Tokens === token)[lang] = value;
+                };
             }
+            if (token == `dota_tooltip_ability_chess_ability_pao_xiao`) {
+                console.log(lang, tokenItem);
+            }
+            tokenItem[lang] = langD[token];
+            if (token == `dota_tooltip_ability_chess_ability_pao_xiao`) {
+                console.log('after', tokenItem);
+            }
+            csvData.push(tokenItem);
         });
+    });
+
+    // 需要保障第一个元素有所有的lang，否则csv文件会出错
+    languages.forEach((lang) => {
+        csvData[0][lang] = csvData[0][lang] || '';
     });
 
     const stringCsvContent = Papa.unparse(csvData);

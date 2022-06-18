@@ -1,6 +1,12 @@
 import PluginError from "plugin-error";
 import through2 from "through2";
 import Vinyl from "vinyl";
+import _ from "lodash";
+import glob from "glob";
+import fs from "fs-extra";
+import xlsx from "node-xlsx";
+
+import { convert as ConvertCSVToLocaliation } from "./csvToLocalization";
 
 const keyvalues = require("keyvalues-node");
 
@@ -16,11 +22,11 @@ export interface KVToLocalizationOptions {
      */
     localizationOutPath: string;
     /**
-     * 是否同时输出本地化CSV文件，默认为 true，可以方便的和其他人合作
+     * 输出csv文件的路径
      * @type {boolean}
      * @memberof KVToLocalizationOptions
      */
-    outputCSV?: boolean;
+    csvOutPath?: string;
     /**
      * 需要输出的语言，默认为 ["SChinese", "English"]
      * @type {string[]}
@@ -28,49 +34,62 @@ export interface KVToLocalizationOptions {
      */
     languages?: string[];
     /**
-     * 自定义的前缀，key为kv的BaseClass的正则匹配字符串，value为要使用的前缀
+     * 自定义的前缀
      * @type {Record<string, string>}
      * @memberof KVToLocalizationOptions
      */
-    customPrefix?: Record<string, string>;
+    customPrefix?: (key: string, data: any) => string;
     /**
-     * 需要输出的自定义后缀，key为kv的BaseClass的正则匹配字符串，value为要使用的后缀
+     * 需要输出的自定义后缀
      * @type {Record<string, string[]>}
      * @memberof KVToLocalizationOptions
      */
-    customSuffix?: Record<string, string[]>;
+    customSuffix?: (key: string, data: any) => string[];
     /**
      * 啰嗦模式
      * @type {boolean}
      * @memberof KVToLocalizationOptions
      */
     verbose?: boolean;
+    /**
+     * 如果有其他需要的自定义的token，在这个方法里面提供
+     *
+     * @memberof KVToLocalizationOptions
+     */
+    customToken?: (key: string, data: any) => string[];
+    /**
+     * 获取了这个kv项的所有token之后，可以使用这个方法来过滤掉不需要的token
+     * @memberof KVToLocalizationOptions
+     */
+    transformTokenName?: (tokens: string[], key: string, data: any) => string[];
+    /**
+     * 是否导出技能kv中的modifier
+     *
+     * @type {boolean}
+     * @memberof KVToLocalizationOptions
+     */
+    exportKVModifiers?: boolean;
+    /**
+     * 是否导出技能kv中的AbilityValues
+     * @type {boolean}
+     * @memberof KVToLocalizationOptions
+     */
+    exportAbilityValues?: boolean;
 }
 
-export function kvToLocalize(options: KVToLocalizationOptions) {
-    const {
-        localizationOutPath,
-        outputCSV = true,
+export function kvToLocalize(localizationOutPath: string, options: KVToLocalizationOptions) {
+    let {
+        csvOutPath,
         languages = Languages,
         customPrefix,
         customSuffix,
-        verbose
+        customToken,
+        transformTokenName: transformTokenNames,
+        verbose,
     } = options;
-    const prefixRules: Record<string, string> = {
-        ...{
-            "[ability|item]_[lua|datadriven]": "dota_tooltip_ability_",
-            "npc_*": "", // 其实这个规则不用写的，写这里做个范例吧
-        },
-        ...customPrefix,
-    };
-    const suffixRules: Record<string, string[]> = {
-        ...{
-            "[ability|item]_[lua|datadriven]": ["_description"]
-        },
-        ...customSuffix
-    };
 
-    let localizationTokens = {} as any;
+    let localizationTokens: string[] = [];
+    if (csvOutPath === undefined) csvOutPath = localizationOutPath;
 
     function parseKV(file: Vinyl, _: any, next: Function) {
         if (file.isNull()) {
@@ -87,26 +106,42 @@ export function kvToLocalize(options: KVToLocalizationOptions) {
                 const kvContent = kv[key];
                 Object.keys(kvContent).forEach(itemKey => {
                     const itemValue = kvContent[itemKey];
-                    const BaseClass = itemValue.BaseClass;
-                    if (BaseClass == null) {
-                        if (verbose) {
-                            console.log(`${file.path}中的${key}的${itemKey}没有BaseClass`);
-                            return;
+                    const baseClass = itemValue.BaseClass;
+
+                    let prefix = "";
+                    if (customPrefix) prefix = customPrefix(itemKey, itemValue) ?? "";
+                    else {
+                        // 提供一些默认的前缀
+                        if (/[item_|ability_]_[datadriven|lua]/.test(baseClass)) {
+                            prefix = "dota_tooltip_ability_";
                         }
                     }
 
-                    let prefix = "";
-                    const prefixReg = Object.keys(prefixRules).find(reg => BaseClass.match(reg));
-                    if (prefixReg) prefix = prefixRules[prefixReg];
-
                     let suffix = [""];
-                    const suffixReg = Object.keys(suffixRules).find(reg => BaseClass.match(reg));
-                    if (suffixReg) {
-                        suffix = suffixRules[suffixReg];
-                        suffix.forEach(s => {
-                            if (!suffix.includes(s)) suffix.push(s);
-                        });
+                    if (customSuffix) {
+                        let customSuffixValue = customSuffix(itemKey, itemValue);
+                        if (customSuffixValue) {
+                            suffix = _.uniq(_.concat(suffix, customSuffixValue));
+                        }
+                    } else {
+                        // 提供一些默认的后缀
+                        if (/[item_|ability_]_[datadriven|lua]/.test(baseClass)) {
+                            suffix = _.uniq(_.concat(suffix, "_description"));
+                        }
                     }
+
+                    let tokens = suffix.map(s => `${prefix}${itemKey}${s}`);
+
+                    if (customToken != null) {
+                        let extraToekens = customToken(itemKey, itemValue);
+                        tokens = _.uniq(_.concat(tokens, extraToekens));
+                    }
+
+                    if (transformTokenNames != null) {
+                        tokens = transformTokenNames(tokens, itemKey, itemValue);
+                    }
+
+                    localizationTokens = _.uniq(_.concat(localizationTokens, tokens));
                 });
             });
         } catch (err) {
@@ -115,8 +150,90 @@ export function kvToLocalize(options: KVToLocalizationOptions) {
     }
 
     function endStream() {
+        let languageData: Record<string, Record<string, string>> = {};
+        // read all addon_*.txt files in the output path
+        const addonFiles = glob.sync(`${localizationOutPath}/addon_*.txt`);
+        // if there are extra languages, push them to the languages array
+        addonFiles.forEach(file => {
+            const fileContent = fs.readFileSync(file, "utf8");
+            const data = keyvalues.decode(fileContent);
+            const language = data.lang.Language;
+            languages = _.uniq(_.concat(languages, language));
+            languageData[language] = data.lang.Tokens;
+        });
 
+        // read all *.csv files in the csvOutPath
+        const csvFiles = glob.sync(`${csvOutPath}/*.csv`);
+        // if there are extra languages, push them to the languages array
+        csvFiles.forEach(file => {
+            const fileContent = fs.readFileSync(file, "utf8");
+            const data = xlsx.parse(fileContent);
+            const sheet = data[0];
+            const languages_row = sheet.data[0] as string[];
+            const rows = sheet.data.slice(1) as string[][];
+            languages_row.forEach((item, i) => {
+                languages = _.uniq(_.concat(languages, item));
+                rows.forEach(tokenRow => {
+                    const key = tokenRow[0];
+                    const value = tokenRow[i];
+                    if (languageData[item] == null) {
+                        languageData[item] = {};
+                    }
+                    if (value !== null && value !== "" && value !== undefined) {
+                        languageData[item][key] = value;
+                    }
+                });
+            });
+        });
+
+        languages.forEach(lang => {
+            if (languageData[lang] == null) {
+                languageData[lang] = {};
+            }
+            // push all the tokens that doesn't exist in the existedLanguageData to the existedLanguageData
+            localizationTokens.forEach(token => {
+                if (languageData[lang][token] == null) {
+                    languageData[lang][token] = "";
+                }
+            });
+        });
+
+        // write addon_{language}.txt files to the stream
+        languages.forEach(lang => {
+            const data = {
+                lang: {
+                    Language: lang,
+                    Tokens: languageData[lang]
+                }
+            };
+            const fileContent = keyvalues.encode(data);
+            const fileName = `addon_${lang.toLocaleLowerCase()}.txt`;
+            this.push(new Vinyl({
+                path: fileName,
+                contents: Buffer.from(fileContent)
+            }));
+        });
+
+
+        Object.keys(languageData).forEach(language => {
+            // put the language data into addin_{language}.txt
+            let content = keyvalues.encode({
+                lang: {
+                    Language: language,
+                    Tokens: languageData[language]
+                }
+            });
+
+            const languageFile = new Vinyl({
+                path: `addin_${language.toLowerCase()}.txt`,
+                contents: Buffer.from(content)
+            });
+            this.emit("data", languageFile);
+        });
+        this.emit(`end`);
+
+        // 结束
+        this.emit("end");
     }
-
     return through2.obj(parseKV, endStream);
 }

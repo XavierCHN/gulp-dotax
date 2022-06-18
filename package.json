@@ -54,6 +54,7 @@
     "author": "Xavier Tseng",
     "license": "MIT",
     "devDependencies": {
+        "@types/fs-extra": "^9.0.13",
         "@types/gulp": "^4.0.9",
         "@types/lodash": "^4.14.182",
         "@types/through2": "^2.0.36",
@@ -63,6 +64,7 @@
     },
     "dependencies": {
         "anymatch": "^3.1.2",
+        "fs-extra": "^10.1.0",
         "gulp": "^4.0.2",
         "json-to-ts": "^1.7.0",
         "json5": "^2.2.1",

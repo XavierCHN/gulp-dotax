@@ -1,12 +1,10 @@
 import PluginError from "plugin-error";
 import through2 from "through2";
 import Vinyl from "vinyl";
-import _ from "lodash";
 import glob from "glob";
 import fs from "fs-extra";
 import xlsx from "node-xlsx";
-
-import { convert as ConvertCSVToLocaliation } from "./csvToLocalization";
+import _ from "lodash";
 
 const keyvalues = require("keyvalues-node");
 
@@ -77,7 +75,7 @@ export interface KVToLocalizationOptions {
     exportAbilityValues?: boolean;
 }
 
-export function kvToLocalize(localizationOutPath: string, options: KVToLocalizationOptions) {
+export function kvToLocalization(localizationOutPath: string, options: KVToLocalizationOptions) {
     let {
         csvOutPath,
         languages = Languages,
@@ -90,11 +88,13 @@ export function kvToLocalize(localizationOutPath: string, options: KVToLocalizat
         verbose,
     } = options;
 
+    if (verbose) console.log(`${PLUGIN_NAME}: options`, options);
+
     let localizationTokens: string[] = [];
     if (csvOutPath === undefined) csvOutPath = localizationOutPath;
     let specialKeys: string[] = [];
 
-    function parseKV(file: Vinyl, _: any, next: Function) {
+    function parseKV(file: Vinyl, enc: any, next: Function) {
         if (file.isNull()) {
             return this.queue(file); // pass along
         }
@@ -104,6 +104,8 @@ export function kvToLocalize(localizationOutPath: string, options: KVToLocalizat
         }
 
         try {
+            if (verbose) console.log(`${PLUGIN_NAME} parsing from ${file.path}`);
+
             const kv = keyvalues.decode(file.contents.toString());
             Object.keys(kv).forEach(key => {
                 const kvContent = kv[key];
@@ -192,90 +194,117 @@ export function kvToLocalize(localizationOutPath: string, options: KVToLocalizat
     }
 
     function endStream() {
-        let languageData: Record<string, Record<string, string>> = {};
-        // read all addon_*.txt files in the output path
-        const addonFiles = glob.sync(`${localizationOutPath}/addon_*.txt`);
-        // if there are extra languages, push them to the languages array
-        addonFiles.forEach(file => {
-            const fileContent = fs.readFileSync(file, "utf8");
-            const data = keyvalues.decode(fileContent);
-            const language = data.lang.Language;
-            languages = _.uniq(_.concat(languages, language));
-            languageData[language] = data.lang.Tokens;
-        });
+        try {
 
-        // read all *.csv files in the csvOutPath
-        const csvFiles = glob.sync(`${csvOutPath}/*.csv`);
-        // if there are extra languages, push them to the languages array
-        csvFiles.forEach(file => {
-            const fileContent = fs.readFileSync(file, "utf8");
-            const data = xlsx.parse(fileContent);
-            const sheet = data[0];
-            const languages_row = sheet.data[0] as string[];
-            const rows = sheet.data.slice(1) as string[][];
-            languages_row.forEach((item, i) => {
-                languages = _.uniq(_.concat(languages, item));
-                rows.forEach(tokenRow => {
-                    const key = tokenRow[0];
-                    const value = tokenRow[i];
-                    if (languageData[item] == null) {
-                        languageData[item] = {};
-                    }
-                    if (value !== null && value !== "" && value !== undefined) {
-                        languageData[item][key] = value;
+            let languageData: Record<string, Record<string, string>> = {};
+            // read all addon_*.txt files in the output path
+            const addonFiles = glob.sync(`${localizationOutPath}/addon_*.txt`);
+            // if there are extra languages, push them to the languages array
+            addonFiles.forEach(file => {
+                const fileContent = fs.readFileSync(file, "utf8");
+                const data = keyvalues.decode(fileContent);
+                const language = data.lang.Language;
+                languages = _.uniq(_.concat(languages, language));
+                languageData[language] = data.lang.Tokens;
+            });
+
+            // read all *.csv files in the csvOutPath
+            const csvFiles = glob.sync(`${csvOutPath}/addon.csv`);
+            // if there are extra languages, push them to the languages array
+            csvFiles.forEach(file => {
+                const fileContent = fs.readFileSync(file, "utf8");
+                const data = xlsx.parse(fileContent);
+                const sheet = data[0];
+                const languages_row = sheet.data[0] as string[];
+                const rows = sheet.data.slice(1) as string[][];
+                languages_row.forEach((item, i) => {
+                    languages = _.uniq(_.concat(languages, item));
+                    rows.forEach(tokenRow => {
+                        const key = tokenRow[0];
+                        const value = tokenRow[i];
+                        if (languageData[item] == null) {
+                            languageData[item] = {};
+                        }
+                        if (value !== null && value !== "" && value !== undefined) {
+                            languageData[item][key] = value;
+                        }
+                    });
+                });
+            });
+
+            languages.forEach(lang => {
+                if (languageData[lang] == null) {
+                    languageData[lang] = {};
+                }
+                // push all the tokens that doesn't exist in the existedLanguageData to the existedLanguageData
+                localizationTokens.forEach(token => {
+                    if (languageData[lang][token] == null) {
+                        languageData[lang][token] = "";
                     }
                 });
             });
-        });
 
-        languages.forEach(lang => {
-            if (languageData[lang] == null) {
-                languageData[lang] = {};
-            }
-            // push all the tokens that doesn't exist in the existedLanguageData to the existedLanguageData
-            localizationTokens.forEach(token => {
-                if (languageData[lang][token] == null) {
-                    languageData[lang][token] = "";
-                }
-            });
-        });
-
-        // write addon_{language}.txt files to the stream
-        languages.forEach(lang => {
-            const data = {
-                lang: {
-                    Language: lang,
-                    Tokens: languageData[lang]
-                }
-            };
-            const fileContent = keyvalues.encode(data);
-            const fileName = `addon_${lang.toLocaleLowerCase()}.txt`;
-            this.push(new Vinyl({
-                path: fileName,
-                contents: Buffer.from(fileContent)
-            }));
-        });
-
-
-        Object.keys(languageData).forEach(language => {
-            // put the language data into addin_{language}.txt
-            let content = keyvalues.encode({
-                lang: {
-                    Language: language,
-                    Tokens: languageData[language]
-                }
+            // write addon_{language}.txt files to the stream
+            languages.forEach(lang => {
+                const data = {
+                    lang: {
+                        Language: lang,
+                        Tokens: languageData[lang]
+                    }
+                };
+                const fileContent = keyvalues.encode(data);
+                const fileName = `addon_${lang.toLocaleLowerCase()}.txt`;
+                this.push(new Vinyl({
+                    path: fileName,
+                    contents: Buffer.from(fileContent)
+                }));
             });
 
-            const languageFile = new Vinyl({
-                path: `addin_${language.toLowerCase()}.txt`,
-                contents: Buffer.from(content)
-            });
-            this.emit("data", languageFile);
-        });
-        this.emit(`end`);
 
-        // 结束
-        this.emit("end");
+            Object.keys(languageData).forEach(language => {
+                // put the language data into addin_{language}.txt
+                let content = keyvalues.encode({
+                    lang: {
+                        Language: language,
+                        Tokens: languageData[language]
+                    }
+                });
+
+                const languageFile = new Vinyl({
+                    path: `addin_${language.toLowerCase()}.txt`,
+                    contents: Buffer.from(content)
+                });
+                this.emit("data", languageFile);
+            });
+
+            // write addon.csv file to the stream
+            const csvContent: string[][] = [];
+            csvContent[0] = languages;
+            // push all tokens to the csvContent
+            Object.keys(languageData).forEach(language => {
+                const tokens = languageData[language];
+                const index = languages.indexOf(language);
+                Object.keys(tokens).forEach((token, i) => {
+                    csvContent[i + 1] = csvContent[i + 1] || [];
+                    csvContent[i + 1][index] = tokens[token];
+                });
+            });
+            const buffer = xlsx.build([{
+                name: "languages",
+                data: csvContent,
+                options: {}
+            }], {});
+            const csvFile = new Vinyl({
+                path: "addon.csv",
+                contents: buffer
+            });
+            this.emit("data", csvFile);
+
+            // 结束
+            this.emit("end");
+        } catch (err) {
+            return this.emit('error', new PluginError(PLUGIN_NAME, err));
+        }
     }
     return through2.obj(parseKV, endStream);
 }

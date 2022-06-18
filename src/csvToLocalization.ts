@@ -25,7 +25,7 @@ export function convertCSVToLocalization(contents: string): Record<string, Recor
     return languageData;
 }
 
-export function convert(file: Vinyl, _: any, next: Function) {
+export function convert(file: Vinyl, enc: any, next: Function) {
     let data = convertCSVToLocalization(file.contents.toString());
     Object.keys(data).forEach(language => {
         // put the language data into addin_{language}.txt

@@ -31,7 +31,7 @@ export function kvToJS(options: KVToJSOptions) {
 
     let firstFile: Vinyl = null;
     let mergedFile = {} as any;
-    function parseKV(file: Vinyl, _: any, next: Function) {
+    function parseKV(file: Vinyl, enc: any, next: Function) {
         if (kvDir === undefined) {
             throw new PluginError(PLUGIN_NAME, "kvDir is required");
         }

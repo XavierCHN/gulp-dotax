@@ -72,7 +72,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                     if (abilityValuesBlock && key == '[}]') abilityValuesBlock = false;
 
                     // 获取该单元格的值
-                    let cell = row[i];
+                    let cell: string = row[i];
 
                     if (attachWearablesBlock && key !== `AttachWearables[{]`) {
                         return `${indentStr}"${key}" { "ItemDef" "${cell}" }`;
@@ -118,7 +118,7 @@ export function sheetToKV(options: SheetToKVOptions) {
         );
     }
 
-    function convert(this: any, file: Vinyl, _: any, callback: Function) {
+    function convert(this: any, file: Vinyl, enc: any, callback: Function) {
         if (file.isNull()) return callback(null, file);
         if (file.isStream()) return callback(new Error(`sheet_to_kv: Streaming not supported`));
         if (file.basename.startsWith(`~$`)) {

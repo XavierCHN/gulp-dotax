@@ -1,17 +1,17 @@
-import PluginError from "plugin-error";
-import through2 from "through2";
-import Vinyl from "vinyl";
-import glob from "glob";
-import fs from "fs-extra";
-import _ from "lodash";
-import { stringify } from "csv-stringify/sync";
+import PluginError from 'plugin-error';
+import through2 from 'through2';
+import Vinyl from 'vinyl';
+import glob from 'glob';
+import fs from 'fs-extra';
+import _ from 'lodash';
+import Papa from 'papaparse';
+import path from 'path';
 
-const { readCSVSync } = require("read-csv-sync");
-const keyvalues = require("keyvalues-node");
+const keyvalues = require('keyvalues-node');
 
 const PLUGIN_NAME = `gulp-dotax:kvToLocalization`;
 
-const Languages = ["SChinese", "English"];
+const Languages = ['SChinese', 'English'];
 
 export interface KVToLocalizationOptions {
     /**
@@ -20,12 +20,6 @@ export interface KVToLocalizationOptions {
      * @memberof KVToLocalizationOptions
      */
     localizationOutPath: string;
-    /**
-     * 输出csv文件的路径
-     * @type {boolean}
-     * @memberof KVToLocalizationOptions
-     */
-    csvOutPath?: string;
     /**
      * 需要输出的语言，默认为 ["SChinese", "English"]
      * @type {string[]}
@@ -44,12 +38,6 @@ export interface KVToLocalizationOptions {
      * @memberof KVToLocalizationOptions
      */
     customSuffix?: (key: string, data: any) => string[];
-    /**
-     * 啰嗦模式
-     * @type {boolean}
-     * @memberof KVToLocalizationOptions
-     */
-    verbose?: boolean;
     /**
      * 如果有其他需要的自定义的token，在这个方法里面提供
      *
@@ -82,12 +70,130 @@ export interface KVToLocalizationOptions {
     exportAbilityValues?: boolean;
 }
 
+export function updateLocalFilesFromCSV(
+    localizationOutPath: string,
+    languages: string[],
+    extraTokens?: string[]
+) {
+    let languageData: Record<string, Record<string, string>> = {};
+    // read all addon_*.txt files in the output path
+    const addonFiles = glob.sync(`${localizationOutPath}/*.txt`);
+    // if there are extra languages, push them to the languages array
+    addonFiles.forEach((addonFileName) => {
+        let fileContent = fs.readFileSync(addonFileName, 'utf-8').toString();
+        // deal with the \n in the file
+        const data = keyvalues.decode(fileContent);
+        const language = data.lang.Language.trim();
+        languages = _.uniq(_.concat(languages, language));
+        languageData[language] = data.lang.Tokens || {};
+        // escape \n in the tokens
+        Object.keys(languageData[language]).forEach((token) => {
+            languageData[language][token] = languageData[language][token].replace(/\\n/g, '\n');
+        });
+    });
+
+    // 读取addon.csv中已经修改的内容
+    const csvFileName = `${localizationOutPath}/addon.csv`;
+    if (fs.existsSync(csvFileName)) {
+        const data = Papa.parse(fs.readFileSync(csvFileName, 'utf-8'));
+        if (data.errors.length === 0) {
+            let content = data.data as string[][];
+            let csvHeader = content[0];
+            languages = _.uniq(_.concat(languages, csvHeader.slice(1)));
+            let csvContent = content.slice(1);
+            csvContent.forEach((row) => {
+                const tokenName = row[0];
+                csvHeader.forEach((lang, i) => {
+                    // ignore the first column, it stores the token
+                    if (lang && i != 0) {
+                        const value = row[i];
+                        if (value && value.trim() !== '') {
+                            languageData[lang] = languageData[lang] || {};
+                            languageData[lang][tokenName] = value;
+                        }
+                    }
+                });
+            });
+        }
+    }
+
+    languages.forEach((lang) => {
+        if (languageData[lang] == null) {
+            languageData[lang] = {};
+        }
+        // push all the tokens that doesn't exist to the existedLanguageData
+        if (extraTokens) {
+            extraTokens.forEach((token) => {
+                if (languageData[lang][token] == null) {
+                    languageData[lang][token] = '';
+                }
+            });
+        }
+    });
+
+    // write addon_{language}.txt files to localizationOutputPath
+    languages.forEach((lang) => {
+        let langD = languageData[lang];
+        // convert \n to \\n
+        Object.keys(langD).forEach((token) => {
+            langD[token] = langD[token].replace(/\n/g, '\\n');
+        });
+        const data = {
+            lang: {
+                Language: lang,
+                Tokens: langD,
+            },
+        };
+        const fileContent = keyvalues.encode(data);
+        const fileName = `addon_${lang.toLocaleLowerCase()}.txt`;
+        fs.writeFileSync(`${localizationOutPath}/${fileName}`, fileContent);
+    });
+
+    // write addon.csv file to the stream
+    let csvData: Record<string, string>[] = [];
+    // convert language data to csv data
+    // csv data format:
+    // [{Tokens: token, SChinese: value, English: value, ...}]
+    Object.entries(languageData).forEach(([lang, tokens]) => {
+        Object.entries(tokens).forEach(([token, value]) => {
+            if (!csvData.find((s) => s.Tokens === token)) {
+                csvData.push({
+                    Tokens: token,
+                    [lang]: value,
+                });
+            } else {
+                csvData.find((s) => s.Tokens === token)[lang] = value;
+            }
+        });
+    });
+
+    const stringCsvContent = Papa.unparse(csvData);
+
+    // write to addon.csv in localizationOutputPath
+    fs.writeFileSync(`${localizationOutPath}/addon.csv`, `\ufeff${stringCsvContent}`, 'utf-8');
+}
+
+export function csvToLocals() {
+    return through2.obj(function (file: Vinyl, encoding: any, callback: Function) {
+        if (file.isNull()) {
+            return callback(null, file);
+        }
+        // get the dirname of the file
+        const dirname = path.dirname(file.path);
+        // it is ok to pass [] to the function, since it will update all languages from .csv header
+        const languages: string[] = [];
+        updateLocalFilesFromCSV(dirname, languages);
+    });
+}
+
 export function kvToLocalization(localizationOutPath: string, options?: KVToLocalizationOptions) {
     if (localizationOutPath == null) {
-        throw new PluginError(PLUGIN_NAME, "localizationOutPath is required, you should provide where addon_*.txt files are stored");
+        throw new PluginError(
+            PLUGIN_NAME,
+            'localizationOutPath is required, you should provide where addon_*.txt and addon.csv files are stored'
+        );
     }
     let {
-        csvOutPath,
         languages = Languages,
         customPrefix,
         customSuffix,
@@ -96,11 +202,9 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
         transformTokenName: transformTokenNames,
         exportAbilityValues = true,
         exportKVModifiers = true,
-        verbose,
     } = options || {};
 
     let localizationTokens: string[] = [];
-    if (csvOutPath === undefined) csvOutPath = localizationOutPath;
     let specialKeys: string[] = [];
 
     function parseKV(file: Vinyl, enc: any, next: Function) {
@@ -114,9 +218,9 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
 
         try {
             const kv = keyvalues.decode(file.contents.toString());
-            Object.keys(kv).forEach(key => {
+            Object.keys(kv).forEach((key) => {
                 const kvContent = kv[key];
-                Object.keys(kvContent).forEach(itemKey => {
+                Object.keys(kvContent).forEach((itemKey) => {
                     const itemValue = kvContent[itemKey];
                     const baseClass = itemValue.BaseClass;
 
@@ -129,46 +233,48 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
                         if (baseClass == null) return; // 只有有base class的才会被parse
                     }
 
-                    let prefix = "";
-                    if (customPrefix) prefix = customPrefix(itemKey, itemValue) || "";
-                    if (prefix === "") {
+                    let prefix = '';
+                    if (customPrefix) prefix = customPrefix(itemKey, itemValue) || '';
+                    if (prefix === '') {
                         // 提供一些默认的前缀
                         if (/[item_|ability_]_[datadriven|lua]/.test(baseClass)) {
-                            prefix = "dota_tooltip_ability_";
+                            prefix = 'dota_tooltip_ability_';
                         }
                     }
 
-                    let suffix = [""];
+                    let suffix = [''];
                     if (customSuffix) {
                         let customSuffixValue = customSuffix(itemKey, itemValue);
                         if (customSuffixValue) {
                             suffix = _.uniq(_.concat(suffix, customSuffixValue));
                         }
                     }
-                    if (suffix === [""]) {
+                    if (suffix.length == 1 && suffix[0] === '') {
                         // 提供一些默认的后缀
                         if (/[item_|ability_]_[datadriven|lua]/.test(baseClass)) {
-                            suffix = _.uniq(_.concat(suffix, "_description"));
+                            suffix = _.uniq(_.concat(suffix, '_description'));
 
                             // 技能的AbilityValues和AbilitySpecials的处理
                             if (exportAbilityValues) {
                                 let abilityValues = itemValue.AbilityValues;
                                 if (abilityValues) {
-                                    suffix = _.uniq(_.concat(suffix, Object.keys(abilityValues).map(s => `_${s}`)));
+                                    suffix = _.uniq(
+                                        _.concat(
+                                            suffix,
+                                            Object.keys(abilityValues).map((s) => `_${s}`)
+                                        )
+                                    );
                                 }
                                 let abilitySpeicals = itemValue.AbilitySpecials;
                                 if (abilitySpeicals) {
-                                    Object.keys(abilitySpeicals).forEach(data => {
+                                    Object.keys(abilitySpeicals).forEach((data) => {
                                         const ss = abilitySpeicals[data];
-                                        Object.keys(ss).forEach(s => {
-                                            if (
-                                                ![
-                                                    "var_type",
-                                                    "LinkedSpecialBonus",
-                                                ].includes(s)
-                                            ) {
+                                        Object.keys(ss).forEach((s) => {
+                                            if (!['var_type', 'LinkedSpecialBonus'].includes(s)) {
                                                 suffix = _.uniq(_.concat(suffix, `_${s}`));
-                                                specialKeys = _.uniq(_.concat(specialKeys, `"_${s}"`));
+                                                specialKeys = _.uniq(
+                                                    _.concat(specialKeys, `"_${s}"`)
+                                                );
                                             }
                                         });
                                     });
@@ -177,7 +283,7 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
                         }
                     }
 
-                    let tokens = suffix.map(s => `${prefix}${itemKey}${s}`);
+                    let tokens = suffix.map((s) => `${prefix}${itemKey}${s}`);
 
                     if (customToken != null) {
                         let extraToekens = customToken(itemKey, itemValue);
@@ -188,11 +294,14 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
                     if (exportKVModifiers) {
                         let modifiers = itemValue.Modifiers;
                         if (modifiers) {
-                            Object.keys(modifiers).forEach(modifierName => {
-                                tokens = _.uniq(_.concat(tokens,
-                                    `dota_tooltip_modifier_${modifierName}`,
-                                    `dota_tooltip_modifier_${modifierName}_description`,
-                                ));
+                            Object.keys(modifiers).forEach((modifierName) => {
+                                tokens = _.uniq(
+                                    _.concat(
+                                        tokens,
+                                        `dota_tooltip_modifier_${modifierName}`,
+                                        `dota_tooltip_modifier_${modifierName}_description`
+                                    )
+                                );
                             });
                         }
                     }
@@ -211,100 +320,8 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
     }
 
     function endStream() {
-        // try {
-        let languageData: Record<string, Record<string, string>> = {};
-        // read all addon_*.txt files in the output path
-        const addonFiles = glob.sync(`${localizationOutPath}/*.txt`);
-        // if there are extra languages, push them to the languages array
-        addonFiles.forEach(addonFileName => {
-            let fileContent = fs.readFileSync(addonFileName, 'utf-8').toString();
-            // deal with the \n in the file
-            fileContent = fileContent.replace(/\\n/g, '___x___combine____n___');
-            const data = keyvalues.decode(fileContent);
-            const language = data.lang.Language.trim();
-            languages = _.uniq(_.concat(languages, language));
-            languageData[language] = data.lang.Tokens || {};
-        });
-
-        // 读取addon.csv中已经修改的内容
-        const csvFileName = `${csvOutPath}/addon.csv`;
-        if (fs.existsSync(csvFileName)) {
-            const data = readCSVSync(csvFileName) as Record<string, string>[];
-            data.forEach(row => {
-                let token = row.Tokens;
-                Object.keys(row).forEach(key => {
-                    if (key == "Tokens") {
-                    } else {
-                        let language = key.trim();
-                        let value = row[language];
-                        languages = _.uniq(_.concat(languages, language));
-                        if (value != null && value != undefined && value != "") {
-                            if (languageData[language] != null && languageData[language][token] !== null && languageData[language][token] !== undefined && languageData[key][token] != "") {
-                                if (verbose) console.log(`addon_${key.toLowerCase()}.txt ${token} ${key} ${languageData[key][token]} is overwritten by ${value}`);
-                            }
-                            languageData[language] = languageData[language] || {};
-                            languageData[language][token] = value.replace("\\n", "___x___combine____n___");
-                        }
-                    }
-                });
-            });
-        }
-
-        languages.forEach(lang => {
-            if (languageData[lang] == null) {
-                languageData[lang] = {};
-            }
-            // push all the tokens that doesn't exist in the existedLanguageData to the existedLanguageData
-            localizationTokens.forEach(token => {
-                if (languageData[lang][token] == null) {
-                    languageData[lang][token] = "";
-                }
-            });
-        });
-
-        // write addon_{language}.txt files to the stream
-        languages.forEach(lang => {
-            const data = {
-                lang: {
-                    Language: lang,
-                    Tokens: languageData[lang]
-                }
-            };
-            console.log(`iot`, data.lang.Tokens.dota_tooltip_ability_chess_ability_pao_xiao);
-            const fileContent = keyvalues.encode(data).replace(/___x___combine____n___/g, "\\n");
-            const fileName = `addon_${lang.toLocaleLowerCase()}.txt`;
-            console.log(`write ${fileName}`);
-            this.emit(`data`, new Vinyl({
-                path: fileName,
-                contents: Buffer.from(fileContent)
-            }));
-        });
-
-        // write addon.csv file to the stream
-        const headers = ["Tokens", ...languages];
-        const csvContent: string[][] = [headers];
-
-        let tokens = Object.keys(languageData[languages[0]]);
-        tokens.forEach(token => {
-            let row = [token];
-            languages.forEach(language => {
-                row.push(languageData[language][token]);
-            });
-            csvContent.push(row);
-        });
-        const stringCsvContent = stringify(csvContent).replace(/___x___combine____n___/g, "\\n");
-        const csvFile = new Vinyl({
-            path: "addon.csv",
-            contents: Buffer.from(stringCsvContent)
-        });
-
-        this.emit("data", csvFile);
-
-        // 结束
-        this.emit("end");
-        // } catch (err) {
-        //     // return this.emit('error', new PluginError(PLUGIN_NAME, err));
-        // }
+        updateLocalFilesFromCSV(localizationOutPath, languages, localizationTokens);
+        this.emit('end');
     }
     return through2.obj(parseKV, endStream);
 }

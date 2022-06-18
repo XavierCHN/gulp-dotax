@@ -1,1 +1,2 @@
-export { sheetToKV } from './sheet_to_kv';
+export * from './sheetToKV';
+export * from './kvToJS';

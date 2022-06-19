@@ -17,30 +17,30 @@ export interface KVToLocalizationOptions {
      * @type {Record<string, string>}
      * @memberof KVToLocalizationOptions
      */
-    customPrefix?: (key: string, data: any) => string;
+    customPrefix?: (key: string, data: any, filePath: string) => string;
     /**
      * 需要输出的自定义后缀
      * @type {Record<string, string[]>}
      * @memberof KVToLocalizationOptions
      */
-    customSuffix?: (key: string, data: any) => string[];
+    customSuffix?: (key: string, data: any, filePath: string) => string[];
     /**
      * 如果有其他需要的自定义的token，在这个方法里面提供
      *
      * @memberof KVToLocalizationOptions
      */
-    customToken?: (key: string, data: any) => string[];
+    customToken?: (key: string, data: any, filePath: string) => string[];
     /**
      * 获取了这个kv项的所有token之后，可以使用这个方法来过滤掉不需要的token
      * @memberof KVToLocalizationOptions
      */
-    transformTokenName?: (tokens: string[], key: string, data: any) => string[];
+    transformTokenName?: (tokens: string[], key: string, data: any, filePath: string) => string[];
     /**
      * 自定义的忽略规则，因为不是所有的kv都需要本地化，比如某些kv是用来记录一些数据的，不需要本地化
      * 这里提供的默认规则是只有有BaseClass的才会被本地化
      * @memberof KVToLocalizationOptions
      */
-    customIgnoreRule?: (fileName: string, key: string, data: any) => boolean;
+    customIgnoreRule?: (fileName: string, key: string, data: any, filePath: string) => boolean;
     /**
      * 是否导出技能kv中的modifier
      *
@@ -287,7 +287,7 @@ export function kvToLocalsCSV(csvPath: string, options?: KVToLocalizationOptions
 
                     // 默认的忽略规则，默认只有有BaseClass的才会被本地化
                     if (customIgnoreRule) {
-                        if (customIgnoreRule(file.basename, key, itemValue)) {
+                        if (customIgnoreRule(file.basename, key, itemValue, file.path)) {
                             return;
                         }
                     } else {
@@ -295,7 +295,7 @@ export function kvToLocalsCSV(csvPath: string, options?: KVToLocalizationOptions
                     }
 
                     let prefix = '';
-                    if (customPrefix) prefix = customPrefix(itemKey, itemValue) || '';
+                    if (customPrefix) prefix = customPrefix(itemKey, itemValue, file.path) || '';
                     if (prefix === '') {
                         // 提供一些默认的前缀
                         if (/[item_|ability_]_[datadriven|lua]/.test(baseClass)) {
@@ -305,7 +305,7 @@ export function kvToLocalsCSV(csvPath: string, options?: KVToLocalizationOptions
 
                     let suffix = [''];
                     if (customSuffix) {
-                        let customSuffixValue = customSuffix(itemKey, itemValue);
+                        let customSuffixValue = customSuffix(itemKey, itemValue, file.path);
                         if (customSuffixValue) {
                             suffix = _.uniq(_.concat(suffix, customSuffixValue));
                         }
@@ -347,7 +347,7 @@ export function kvToLocalsCSV(csvPath: string, options?: KVToLocalizationOptions
                     let tokens = suffix.map((s) => `${prefix}${itemKey}${s}`);
 
                     if (customToken != null) {
-                        let extraToekens = customToken(itemKey, itemValue);
+                        let extraToekens = customToken(itemKey, itemValue, file.path);
                         tokens = _.uniq(_.concat(tokens, extraToekens));
                     }
 
@@ -368,7 +368,7 @@ export function kvToLocalsCSV(csvPath: string, options?: KVToLocalizationOptions
                     }
 
                     if (transformTokenNames != null) {
-                        tokens = transformTokenNames(tokens, itemKey, itemValue);
+                        tokens = transformTokenNames(tokens, itemKey, itemValue, file.path);
                     }
 
                     localizationTokens = _.uniq(_.concat(localizationTokens, tokens));

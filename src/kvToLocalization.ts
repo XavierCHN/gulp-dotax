@@ -337,10 +337,10 @@ export function kvToLocalsCSV(csvPath: string, options?: KVToLocalizationOptions
                                         )
                                     );
                                 }
-                                let abilitySpeicals = itemValue.AbilitySpecials;
-                                if (abilitySpeicals) {
-                                    Object.keys(abilitySpeicals).forEach((data) => {
-                                        const ss = abilitySpeicals[data];
+                                let AbilitySpecial = itemValue.AbilitySpecial;
+                                if (AbilitySpecial) {
+                                    Object.keys(AbilitySpecial).forEach((data) => {
+                                        const ss = AbilitySpecial[data];
                                         Object.keys(ss).forEach((s) => {
                                             if (!['var_type', 'LinkedSpecialBonus'].includes(s)) {
                                                 suffix = _.uniq(_.concat(suffix, `_${s}`));

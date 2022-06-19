@@ -10,6 +10,13 @@ const keyvalues = require('keyvalues-node');
 
 const PLUGIN_NAME = `gulp-dotax:kvToLocalization`;
 
+const removeBOM = (content: string) => {
+    if (content.charCodeAt(0) === 0xFEFF) {
+        return content.slice(1);
+    }
+    return content;
+};
+
 export interface KVToLocalizationOptions {
     /**
      * 自定义的前缀
@@ -62,7 +69,8 @@ export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
             `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`,
         );
     }
-    let csv = fs.readFileSync(csvFilePath, 'utf-8').replace(/^\uFEFF/, '');
+    let csv = fs.readFileSync(csvFilePath, 'utf-8').toString();
+    csv = removeBOM(csv);
     let parsed = Papa.parse(csv, { header: true });
     let data = parsed.data as { [key: string]: string | number; }[];
     let header = parsed.meta.fields;
@@ -85,13 +93,14 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
             `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`
         );
     }
-    let csv = fs.readFileSync(csvFilePath, 'utf-8').replace(/^\uFEFF/, '');
+    let csv = fs.readFileSync(csvFilePath, 'utf-8').toString();
+    csv = removeBOM(csv);
     let parsed = Papa.parse(csv, { header: true });
     let headers = parsed.meta.fields;
     let tokenKey = headers[0];
     let data = parsed.data as { [key: string]: string | number; }[];
     files.forEach((file) => {
-        let content = fs.readFileSync(file, 'utf-8');
+        let content = fs.readFileSync(file, 'utf-8').toString();
         console.log('trying to get tokens from file: ' + file);
         let locals = keyvalues.decode(content);
         let lang = locals.lang.Language;
@@ -122,7 +131,8 @@ export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: stri
             `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`
         );
     }
-    let csv = fs.readFileSync(csvFilePath, 'utf8').replace(/^\uFEFF/, '');;
+    let csv = fs.readFileSync(csvFilePath, 'utf8').toString();
+    csv = removeBOM(csv);
     let parsed = Papa.parse(csv, { header: true });
     let data = parsed.data as { [key: string]: string | number; }[];
     let header = parsed.meta.fields;
@@ -164,6 +174,7 @@ export function updateLocalFilesFromCSV(
     if (!override) {
         addonFiles.forEach((addonFileName) => {
             let fileContent = fs.readFileSync(addonFileName, 'utf-8').toString();
+
             // deal with the \n in the file
             const data = keyvalues.decode(fileContent);
             const language = data.lang.Language.trim();
@@ -179,7 +190,8 @@ export function updateLocalFilesFromCSV(
     // 读取addon.csv中已经修改的内容
     const csvFiles = glob.sync(`${existedLocalsPath}/*.csv`);
     csvFiles.forEach((csvFileName) => {
-        let csv = fs.readFileSync(csvFileName, 'utf8').replace(/^\uFEFF/, '');
+        let csv = fs.readFileSync(csvFileName, 'utf8').toString();
+        csv = removeBOM(csv);
         let parsed = Papa.parse(csv, { header: true });
         let data = parsed.data as { [key: string]: string | number; }[];
         let header = parsed.meta.fields;

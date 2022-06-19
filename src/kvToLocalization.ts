@@ -2,9 +2,9 @@ import PluginError from 'plugin-error';
 import through2 from 'through2';
 import Vinyl from 'vinyl';
 import glob from 'glob';
-import fs from 'fs-extra';
+import fs, { existsSync } from 'fs-extra';
 import _ from 'lodash';
-import Papa from 'papaparse';
+import Papa, { parse } from 'papaparse';
 import path from 'path';
 
 const keyvalues = require('keyvalues-node');
@@ -57,74 +57,98 @@ export interface KVToLocalizationOptions {
 }
 
 export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
-    let files = glob.sync(csvFilePath);
-    files.forEach((file) => {
-        let csv = fs.readFileSync(file, 'utf8');
-        let parsed = Papa.parse(csv, { header: true });
-        let data = parsed.data as { [key: string]: string | number }[];
-        let header = parsed.meta.fields;
-        let tokenKey = header[0];
-        if (tokenKey == null) tokenKey = 'Tokens';
-        tokens.forEach((token) => {
-            if (data.find((row) => row[tokenKey] == token) == null) {
-                data.push({ [tokenKey]: token });
-            }
-        });
-        let csvContent = Papa.unparse(data);
-        fs.writeFileSync(file, csvContent);
-    });
-}
-
-export function localsToCSV(localsPath: string, csvFilePath: string) {
-    let files = glob.sync(localsPath);
+    if (!existsSync(csvFilePath)) {
+        fs.writeFileSync(
+            csvFilePath,
+            Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])
+        );
+    }
     let csv = fs.readFileSync(csvFilePath, 'utf8');
     let parsed = Papa.parse(csv, { header: true });
-    let headers = parsed.meta.fields;
-    let tokenKey = headers[0];
     let data = parsed.data as { [key: string]: string | number }[];
-    files.forEach((file) => {
-        let content = fs.readFileSync(file, 'utf8');
-        let locals = keyvalues.parse(content);
-        let lang = locals.lang.Language;
-        let tokens = locals.lang.Tokens;
-        if (tokens == null) return;
-        Object.keys(tokens).forEach((token) => {
-            if (data.find((row) => row[tokenKey] == token) == null) {
-                data.push({ [tokenKey]: token, [lang]: tokens[token] });
-            } else {
-                let row = data.find((row) => row[tokenKey] == token);
-                row[lang] = tokens[token];
-            }
-        });
+    let header = parsed.meta.fields;
+    let tokenKey = header[0];
+    if (tokenKey == null) tokenKey = 'Tokens';
+    tokens.forEach((token) => {
+        if (data.find((row) => row[tokenKey] == token) == null) {
+            data.push({ [tokenKey]: token });
+        }
     });
     let csvContent = Papa.unparse(data);
     fs.writeFileSync(csvFilePath, csvContent);
 }
 
-export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: string]: string }[]) {
-    let files = glob.sync(csvFilePath);
+export function localsToCSV(localsPath: string, csvFilePath: string) {
+    let files = glob.sync(localsPath);
+    if (!existsSync(csvFilePath)) {
+        fs.writeFileSync(
+            csvFilePath,
+            Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])
+        );
+    }
+    let csv = fs.readFileSync(csvFilePath, 'utf-8');
+    let parsed = Papa.parse(csv, { header: true });
+    let headers = parsed.meta.fields;
+    let tokenKey = headers[0];
+    let data = parsed.data as { [key: string]: string | number }[];
     files.forEach((file) => {
-        let csv = fs.readFileSync(file, 'utf8');
-        let parsed = Papa.parse(csv, { header: true });
-        let data = parsed.data as { [key: string]: string | number }[];
-        let header = parsed.meta.fields;
-        let tokenKey = header[0];
-        if (tokenKey == null) tokenKey = 'Tokens';
-        locals.forEach((local) => {
-            if (local[tokenKey] != null) {
-                if (data.find((row) => row[tokenKey] == local[tokenKey]) == null) {
-                    data.push(local);
-                } else {
-                    let row = data.find((row) => row[tokenKey] == local[tokenKey]);
-                    Object.keys(local).forEach((key) => {
-                        row[key] = local[key];
-                    });
-                }
+        let content = fs.readFileSync(file, 'utf-8');
+        console.log('trying to get tokens from file: ' + file);
+        let locals = keyvalues.decode(content);
+        let lang = locals.lang.Language;
+        headers = _.union(headers, [lang.trim()]);
+        let tokens = locals.lang.Tokens;
+        if (tokens == null) return;
+        Object.keys(tokens).forEach((token) => {
+            let row = data.find((row) => row[tokenKey] == token);
+            if (row == null) {
+                data.push({ [tokenKey]: token, [lang]: tokens[token] });
+            } else {
+                let index = data.indexOf(row);
+                data[index][lang] = tokens[token];
             }
         });
-        let csvContent = Papa.unparse(data);
-        fs.writeFileSync(file, csvContent);
     });
+    // 必须保证第一个元素有所有的header
+    headers.forEach((h) => (data[0][h] = data[0][h] || ''));
+    console.log(data[0], headers);
+    let csvContent = Papa.unparse(data);
+    fs.writeFileSync(csvFilePath, csvContent);
+}
+
+export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: string]: string }[]) {
+    if (!existsSync(csvFilePath)) {
+        fs.writeFileSync(
+            csvFilePath,
+            Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])
+        );
+    }
+    let csv = fs.readFileSync(csvFilePath, 'utf8');
+    let parsed = Papa.parse(csv, { header: true });
+    let data = parsed.data as { [key: string]: string | number }[];
+    let header = parsed.meta.fields;
+    let tokenKey = header[0];
+    if (tokenKey == null) tokenKey = 'Tokens';
+    locals.forEach((local) => {
+        if (local[tokenKey] != null) {
+            if (data.find((row) => row[tokenKey] == local[tokenKey]) == null) {
+                data.push(local);
+            } else {
+                let row = data.find((row) => row[tokenKey] == local[tokenKey]);
+                Object.keys(local).forEach((key) => {
+                    row[key] = local[key];
+                });
+                data[data.indexOf(row)] = row;
+            }
+        }
+    });
+    data.forEach((d) => {
+        Object.entries(d).forEach(([key, value]) => {
+            data[0][key] = data[0][key] || '';
+        });
+    });
+    let csvContent = Papa.unparse(data);
+    fs.writeFileSync(csvFilePath, csvContent);
 }
 
 export function updateLocalFilesFromCSV(
@@ -207,6 +231,7 @@ export function updateLocalFilesFromCSV(
         };
         const fileContent = keyvalues.encode(data);
         const fileName = `addon_${lang.toLocaleLowerCase()}.txt`;
+        console.log(`dotax:csvToLoclas is now writing ${fileName}`);
         fs.writeFileSync(`${localsPath}/${fileName}`, fileContent);
     });
 }

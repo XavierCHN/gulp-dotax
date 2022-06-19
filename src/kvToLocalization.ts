@@ -11,21 +11,7 @@ const keyvalues = require('keyvalues-node');
 
 const PLUGIN_NAME = `gulp-dotax:kvToLocalization`;
 
-const Languages = ['SChinese', 'English'];
-
 export interface KVToLocalizationOptions {
-    /**
-     * 输出本地化文件的路径，这个插件会读取该路径中的addon_*.txt文件，如果已经有写好的本地化，那么会直接使用
-     * @type {string}
-     * @memberof KVToLocalizationOptions
-     */
-    localizationOutPath: string;
-    /**
-     * 需要输出的语言，默认为 ["SChinese", "English"]
-     * @type {string[]}
-     * @memberof KVToLocalizationOptions
-     */
-    languages?: string[];
     /**
      * 自定义的前缀
      * @type {Record<string, string>}
@@ -70,52 +56,123 @@ export interface KVToLocalizationOptions {
     exportAbilityValues?: boolean;
 }
 
+export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
+    let files = glob.sync(csvFilePath);
+    files.forEach((file) => {
+        let csv = fs.readFileSync(file, 'utf8');
+        let parsed = Papa.parse(csv, { header: true });
+        let data = parsed.data as { [key: string]: string | number }[];
+        let header = parsed.meta.fields;
+        let tokenKey = header[0];
+        if (tokenKey == null) tokenKey = 'Tokens';
+        tokens.forEach((token) => {
+            if (data.find((row) => row[tokenKey] == token) == null) {
+                data.push({ [tokenKey]: token });
+            }
+        });
+        let csvContent = Papa.unparse(data);
+        fs.writeFileSync(file, csvContent);
+    });
+}
+
+export function localsToCSV(localsPath: string, csvFilePath: string) {
+    let files = glob.sync(localsPath);
+    let csv = fs.readFileSync(csvFilePath, 'utf8');
+    let parsed = Papa.parse(csv, { header: true });
+    let headers = parsed.meta.fields;
+    let tokenKey = headers[0];
+    let data = parsed.data as { [key: string]: string | number }[];
+    files.forEach((file) => {
+        let content = fs.readFileSync(file, 'utf8');
+        let locals = keyvalues.parse(content);
+        let lang = locals.lang.Language;
+        let tokens = locals.lang.Tokens;
+        if (tokens == null) return;
+        Object.keys(tokens).forEach((token) => {
+            if (data.find((row) => row[tokenKey] == token) == null) {
+                data.push({ [tokenKey]: token, [lang]: tokens[token] });
+            } else {
+                let row = data.find((row) => row[tokenKey] == token);
+                row[lang] = tokens[token];
+            }
+        });
+    });
+    let csvContent = Papa.unparse(data);
+    fs.writeFileSync(csvFilePath, csvContent);
+}
+
+export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: string]: string }[]) {
+    let files = glob.sync(csvFilePath);
+    files.forEach((file) => {
+        let csv = fs.readFileSync(file, 'utf8');
+        let parsed = Papa.parse(csv, { header: true });
+        let data = parsed.data as { [key: string]: string | number }[];
+        let header = parsed.meta.fields;
+        let tokenKey = header[0];
+        if (tokenKey == null) tokenKey = 'Tokens';
+        locals.forEach((local) => {
+            if (local[tokenKey] != null) {
+                if (data.find((row) => row[tokenKey] == local[tokenKey]) == null) {
+                    data.push(local);
+                } else {
+                    let row = data.find((row) => row[tokenKey] == local[tokenKey]);
+                    Object.keys(local).forEach((key) => {
+                        row[key] = local[key];
+                    });
+                }
+            }
+        });
+        let csvContent = Papa.unparse(data);
+        fs.writeFileSync(file, csvContent);
+    });
+}
+
 export function updateLocalFilesFromCSV(
-    localizationOutPath: string,
-    languages: string[],
-    extraTokens?: string[]
+    localsPath: string, // 要输出的本地化文件的路径
+    existedLocalsPath: string = localsPath, // 其他包含本地化文本的文件夹，包括addon_*.txt，或者其他的以本插件格式保存的csv文件
+    languages: string[] = [],
+    extraTokens: string[] = [],
+    override: boolean = false
 ) {
     let languageData: Record<string, Record<string, string>> = {};
     // read all addon_*.txt files in the output path
-    const addonFiles = glob.sync(`${localizationOutPath}/*.txt`);
+    const addonFiles = glob.sync(`${existedLocalsPath}/addon_*.txt`);
     // if there are extra languages, push them to the languages array
-    addonFiles.forEach((addonFileName) => {
-        let fileContent = fs.readFileSync(addonFileName, 'utf-8').toString();
-        // deal with the \n in the file
-        const data = keyvalues.decode(fileContent);
-        const language = data.lang.Language.trim();
-        languages = _.uniq(_.concat(languages, language));
-        languageData[language] = data.lang.Tokens || {};
-        // escape \n in the tokens
-        Object.keys(languageData[language]).forEach((token) => {
-            languageData[language][token] = languageData[language][token].replace(/\\n/g, '\n');
+    if (!override) {
+        addonFiles.forEach((addonFileName) => {
+            let fileContent = fs.readFileSync(addonFileName, 'utf-8').toString();
+            // deal with the \n in the file
+            const data = keyvalues.decode(fileContent);
+            const language = data.lang.Language.trim();
+            languages = _.uniq(_.concat(languages, language));
+            languageData[language] = data.lang.Tokens || {};
+            // escape \n in the tokens
+            Object.keys(languageData[language]).forEach((token) => {
+                languageData[language][token] = languageData[language][token].replace(/\\n/g, '\n');
+            });
         });
-    });
+    }
 
     // 读取addon.csv中已经修改的内容
-    const csvFileName = `${localizationOutPath}/addon.csv`;
-    if (fs.existsSync(csvFileName)) {
-        const data = Papa.parse(fs.readFileSync(csvFileName, 'utf-8'));
-        if (data.errors.length === 0) {
-            let content = data.data as string[][];
-            let csvHeader = content[0];
-            languages = _.uniq(_.concat(languages, csvHeader.slice(1)));
-            let csvContent = content.slice(1);
-            csvContent.forEach((row) => {
-                const tokenName = row[0];
-                csvHeader.forEach((lang, i) => {
-                    // ignore the first column, it stores the token
-                    if (lang && i != 0) {
-                        const value = row[i];
-                        if (value && value.trim() !== '') {
-                            languageData[lang] = languageData[lang] || {};
-                            languageData[lang][tokenName] = value;
-                        }
-                    }
-                });
+    const csvFiles = glob.sync(`${existedLocalsPath}/*.csv`);
+    csvFiles.forEach((csvFileName) => {
+        let csv = fs.readFileSync(csvFileName, 'utf8');
+        let parsed = Papa.parse(csv, { header: true });
+        let data = parsed.data as { [key: string]: string | number }[];
+        let header = parsed.meta.fields;
+        let tokenKey = header[0];
+        if (tokenKey == null) tokenKey = 'Tokens';
+        languages = _.union(languages, header.slice(1));
+        data.forEach((row) => {
+            let tokenName = row[tokenKey];
+            if (tokenName == null) return;
+            languages.forEach((language) => {
+                let tokenValue = row[language];
+                if (tokenValue == null) return;
+                languageData[language][tokenName] = tokenValue.toString().replace('\n', '\\n');
             });
-        }
-    }
+        });
+    });
 
     languages.forEach((lang) => {
         if (languageData[lang] == null) {
@@ -137,6 +194,10 @@ export function updateLocalFilesFromCSV(
         // convert \n to \\n
         Object.keys(langD).forEach((token) => {
             langD[token] = langD[token].replace(/\n/g, '\\n');
+            // if the content is null or empty, delete it
+            if (langD[token] === null || langD[token] === '') {
+                delete langD[token];
+            }
         });
         const data = {
             lang: {
@@ -146,67 +207,29 @@ export function updateLocalFilesFromCSV(
         };
         const fileContent = keyvalues.encode(data);
         const fileName = `addon_${lang.toLocaleLowerCase()}.txt`;
-        fs.writeFileSync(`${localizationOutPath}/${fileName}`, fileContent);
+        fs.writeFileSync(`${localsPath}/${fileName}`, fileContent);
     });
-
-    // write addon.csv file to the stream
-    let csvData: Record<string, string>[] = [];
-    // convert language data to csv data
-    // csv data format:
-    // [{Tokens: token, SChinese: value, English: value, ...}]
-    Object.keys(languageData).forEach((lang) => {
-        const langD = languageData[lang];
-        Object.keys(langD).forEach((token) => {
-            let tokenItem = csvData.find((item) => item.Tokens === token);
-            if (tokenItem == null) {
-                tokenItem = {
-                    Tokens: token,
-                };
-            }
-            if (token == `dota_tooltip_ability_chess_ability_pao_xiao`) {
-                console.log(lang, tokenItem);
-            }
-            tokenItem[lang] = langD[token];
-            if (token == `dota_tooltip_ability_chess_ability_pao_xiao`) {
-                console.log('after', tokenItem);
-            }
-            csvData.push(tokenItem);
-        });
-    });
-
-    // 需要保障第一个元素有所有的lang，否则csv文件会出错
-    languages.forEach((lang) => {
-        csvData[0][lang] = csvData[0][lang] || '';
-    });
-
-    const stringCsvContent = Papa.unparse(csvData);
-
-    // write to addon.csv in localizationOutputPath
-    fs.writeFileSync(`${localizationOutPath}/addon.csv`, `\ufeff${stringCsvContent}`, 'utf-8');
 }
 
-export function csvToLocals() {
+export function csvToLocals(localsPath: string) {
     return through2.obj(function (file: Vinyl, encoding: any, callback: Function) {
         if (file.isNull()) {
             return callback(null, file);
         }
         // get the dirname of the file
-        const dirname = path.dirname(file.path);
         // it is ok to pass [] to the function, since it will update all languages from .csv header
-        const languages: string[] = [];
-        updateLocalFilesFromCSV(dirname, languages);
+        updateLocalFilesFromCSV(localsPath);
     });
 }
 
-export function kvToLocalization(localizationOutPath: string, options?: KVToLocalizationOptions) {
-    if (localizationOutPath == null) {
+export function kvToLocalsCSV(csvPath: string, options?: KVToLocalizationOptions) {
+    if (csvPath == null) {
         throw new PluginError(
             PLUGIN_NAME,
             'localizationOutPath is required, you should provide where addon_*.txt and addon.csv files are stored'
         );
     }
     let {
-        languages = Languages,
         customPrefix,
         customSuffix,
         customToken,
@@ -332,7 +355,7 @@ export function kvToLocalization(localizationOutPath: string, options?: KVToLoca
     }
 
     function endStream() {
-        updateLocalFilesFromCSV(localizationOutPath, languages, localizationTokens);
+        pushNewTokensToCSV(csvPath, localizationTokens);
         this.emit('end');
     }
     return through2.obj(parseKV, endStream);

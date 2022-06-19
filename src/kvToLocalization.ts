@@ -193,6 +193,7 @@ export function updateLocalFilesFromCSV(
             languages.forEach((language) => {
                 let tokenValue = row[language];
                 if (tokenValue == null) return;
+                languageData[language] = languageData[language] || {};
                 languageData[language][tokenName] = tokenValue.toString().replace('\n', '\\n');
             });
         });

@@ -60,12 +60,12 @@ export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
     if (!existsSync(csvFilePath)) {
         fs.writeFileSync(
             csvFilePath,
-            Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])
+            `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`,
         );
     }
-    let csv = fs.readFileSync(csvFilePath, 'utf8');
+    let csv = fs.readFileSync(csvFilePath, 'utf-8');
     let parsed = Papa.parse(csv, { header: true });
-    let data = parsed.data as { [key: string]: string | number }[];
+    let data = parsed.data as { [key: string]: string | number; }[];
     let header = parsed.meta.fields;
     let tokenKey = header[0];
     if (tokenKey == null) tokenKey = 'Tokens';
@@ -75,7 +75,7 @@ export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
         }
     });
     let csvContent = Papa.unparse(data);
-    fs.writeFileSync(csvFilePath, csvContent);
+    fs.writeFileSync(csvFilePath, `\ufeff${csvContent}`);
 }
 
 export function localsToCSV(localsPath: string, csvFilePath: string) {
@@ -83,14 +83,14 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
     if (!existsSync(csvFilePath)) {
         fs.writeFileSync(
             csvFilePath,
-            Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])
+            `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`
         );
     }
     let csv = fs.readFileSync(csvFilePath, 'utf-8');
     let parsed = Papa.parse(csv, { header: true });
     let headers = parsed.meta.fields;
     let tokenKey = headers[0];
-    let data = parsed.data as { [key: string]: string | number }[];
+    let data = parsed.data as { [key: string]: string | number; }[];
     files.forEach((file) => {
         let content = fs.readFileSync(file, 'utf-8');
         console.log('trying to get tokens from file: ' + file);
@@ -113,19 +113,19 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
     headers.forEach((h) => (data[0][h] = data[0][h] || ''));
     console.log(data[0], headers);
     let csvContent = Papa.unparse(data);
-    fs.writeFileSync(csvFilePath, csvContent);
+    fs.writeFileSync(csvFilePath, `\ufeff${csvContent}`);
 }
 
-export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: string]: string }[]) {
+export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: string]: string; }[]) {
     if (!existsSync(csvFilePath)) {
         fs.writeFileSync(
             csvFilePath,
-            Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])
+            `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`
         );
     }
     let csv = fs.readFileSync(csvFilePath, 'utf8');
     let parsed = Papa.parse(csv, { header: true });
-    let data = parsed.data as { [key: string]: string | number }[];
+    let data = parsed.data as { [key: string]: string | number; }[];
     let header = parsed.meta.fields;
     let tokenKey = header[0];
     if (tokenKey == null) tokenKey = 'Tokens';
@@ -147,7 +147,7 @@ export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: stri
             data[0][key] = data[0][key] || '';
         });
     });
-    let csvContent = Papa.unparse(data);
+    let csvContent = `\ufeff${Papa.unparse(data)}`;
     fs.writeFileSync(csvFilePath, csvContent);
 }
 
@@ -182,7 +182,7 @@ export function updateLocalFilesFromCSV(
     csvFiles.forEach((csvFileName) => {
         let csv = fs.readFileSync(csvFileName, 'utf8');
         let parsed = Papa.parse(csv, { header: true });
-        let data = parsed.data as { [key: string]: string | number }[];
+        let data = parsed.data as { [key: string]: string | number; }[];
         let header = parsed.meta.fields;
         let tokenKey = header[0];
         if (tokenKey == null) tokenKey = 'Tokens';

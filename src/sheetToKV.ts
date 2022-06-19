@@ -1,3 +1,4 @@
+//@ts-nocheck
 // 将一个sheet转换为一个kv表的gulp插件
 import through2 from 'through2';
 import xlsx from 'node-xlsx';

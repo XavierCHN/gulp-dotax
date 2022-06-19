@@ -1,3 +1,4 @@
+//@ts-nocheck
 import PluginError from 'plugin-error';
 import through2 from 'through2';
 import Vinyl from 'vinyl';
@@ -11,7 +12,7 @@ const keyvalues = require('keyvalues-node');
 const PLUGIN_NAME = `gulp-dotax:kvToLocalization`;
 
 const removeBOM = (content: string) => {
-    if (content.charCodeAt(0) === 0xFEFF) {
+    if (content.charCodeAt(0) === 0xfeff) {
         return content.slice(1);
     }
     return content;
@@ -66,13 +67,13 @@ export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
     if (!existsSync(csvFilePath)) {
         fs.writeFileSync(
             csvFilePath,
-            `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`,
+            `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`
         );
     }
     let csv = fs.readFileSync(csvFilePath, 'utf-8').toString();
     csv = removeBOM(csv);
     let parsed = Papa.parse(csv, { header: true });
-    let data = parsed.data as { [key: string]: string | number; }[];
+    let data = parsed.data as { [key: string]: string | number }[];
     let header = parsed.meta.fields;
     let tokenKey = header[0];
     if (tokenKey == null) tokenKey = 'Tokens';
@@ -81,8 +82,13 @@ export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
             data.push({ [tokenKey]: token });
         }
     });
-    let csvContent = Papa.unparse(data);
-    fs.writeFileSync(csvFilePath, `\ufeff${csvContent}`);
+    let csvContent = `\ufeff${Papa.unparse(data)}`;
+    try {
+        fs.writeFileSync(csvFilePath, csvContent);
+    } catch (e) {
+        console.log(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程`);
+        console.log(e);
+    }
 }
 
 export function localsToCSV(localsPath: string, csvFilePath: string) {
@@ -98,7 +104,7 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
     let parsed = Papa.parse(csv, { header: true });
     let headers = parsed.meta.fields;
     let tokenKey = headers[0];
-    let data = parsed.data as { [key: string]: string | number; }[];
+    let data = parsed.data as { [key: string]: string | number }[];
     files.forEach((file) => {
         let content = fs.readFileSync(file, 'utf-8').toString();
         console.log('trying to get tokens from file: ' + file);
@@ -119,12 +125,16 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
     });
     // 必须保证第一个元素有所有的header
     headers.forEach((h) => (data[0][h] = data[0][h] || ''));
-    console.log(data[0], headers);
     let csvContent = Papa.unparse(data);
-    fs.writeFileSync(csvFilePath, `\ufeff${csvContent}`);
+    try {
+        fs.writeFileSync(csvFilePath, `\ufeff${csvContent}`);
+    } catch (e) {
+        console.log(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程`);
+        console.log(e);
+    }
 }
 
-export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: string]: string; }[]) {
+export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: string]: string }[]) {
     if (!existsSync(csvFilePath)) {
         fs.writeFileSync(
             csvFilePath,
@@ -134,7 +144,7 @@ export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: stri
     let csv = fs.readFileSync(csvFilePath, 'utf8').toString();
     csv = removeBOM(csv);
     let parsed = Papa.parse(csv, { header: true });
-    let data = parsed.data as { [key: string]: string | number; }[];
+    let data = parsed.data as { [key: string]: string | number }[];
     let header = parsed.meta.fields;
     let tokenKey = header[0];
     if (tokenKey == null) tokenKey = 'Tokens';
@@ -157,7 +167,12 @@ export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: stri
         });
     });
     let csvContent = `\ufeff${Papa.unparse(data)}`;
-    fs.writeFileSync(csvFilePath, csvContent);
+    try {
+        fs.writeFileSync(csvFilePath, csvContent);
+    } catch (e) {
+        console.log(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程`);
+        console.log(e);
+    }
 }
 
 export function updateLocalFilesFromCSV(
@@ -193,7 +208,7 @@ export function updateLocalFilesFromCSV(
         let csv = fs.readFileSync(csvFileName, 'utf8').toString();
         csv = removeBOM(csv);
         let parsed = Papa.parse(csv, { header: true });
-        let data = parsed.data as { [key: string]: string | number; }[];
+        let data = parsed.data as { [key: string]: string | number }[];
         let header = parsed.meta.fields;
         let tokenKey = header[0];
         if (tokenKey == null) tokenKey = 'Tokens';

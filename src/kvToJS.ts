@@ -1,11 +1,11 @@
-import JSON5 from 'json5';
-import path from "path";
+//@ts-nocheck
+import path from 'path';
 import PluginError from 'plugin-error';
 import through from 'through2';
 import Vinyl from 'vinyl';
 import JsonToTS from 'json-to-ts';
 
-const keyvalues = require("keyvalues-node");
+const keyvalues = require('keyvalues-node');
 
 const PLUGIN_NAME = `gulp-dotax:kvToJS`;
 
@@ -13,7 +13,7 @@ export interface KVToJSOptions {
     fileName?: string;
     edit?: (json: object) => object;
     transform?: (json: object) => object;
-    output?: "json" | "js";
+    output?: 'json' | 'js';
     types?: boolean;
     jsMountPoint?: string;
     jsMountPointTypingName?: string;
@@ -21,13 +21,13 @@ export interface KVToJSOptions {
 
 export function kvToJS(options: KVToJSOptions) {
     const {
-        fileName = "sync_keyvalues.js",
+        fileName = 'sync_keyvalues.js',
         types = true,
-        jsMountPoint = "GameUI.CustomUIConfig()",
-        jsMountPointTypingName = "CustomUIConfig"
+        jsMountPoint = 'GameUI.CustomUIConfig()',
+        jsMountPointTypingName = 'CustomUIConfig',
     } = options;
 
-    let firstFile: Vinyl = null;
+    let firstFile: Vinyl;
     let mergedFile = {} as any;
     function parseKV(file: Vinyl, enc: any, next: Function) {
         if (file.isNull()) {
@@ -44,7 +44,7 @@ export function kvToJS(options: KVToJSOptions) {
             const kv = keyvalues.decode(file.contents.toString());
             const relativePath = path.relative(path.dirname(firstFile.path), file.path);
             const extname = path.extname(relativePath);
-            const jsName = relativePath.replace(/\\|\//g, "_").replace(extname, "");
+            const jsName = relativePath.replace(/\\|\//g, '_').replace(extname, '');
             // if kv has only one key, get the content of the key
             const kvKeys = Object.keys(kv);
             const kvData = kvKeys.length === 1 ? kv[kvKeys[0]] : kv;
@@ -58,12 +58,14 @@ export function kvToJS(options: KVToJSOptions) {
     function endStream() {
         if (!firstFile) return this.emit(`end`);
         try {
-            const contents = `${Object.keys(mergedFile).map(name => { return `${jsMountPoint}.${name} = ${JSON.stringify(mergedFile[name])}\n`; })}`;
+            const contents = `${Object.keys(mergedFile).map((name) => {
+                return `${jsMountPoint}.${name} = ${JSON.stringify(mergedFile[name])}\n`;
+            })}`;
             const output = new Vinyl({
                 cwd: firstFile.cwd,
                 base: firstFile.base,
                 path: path.join(firstFile.base, fileName),
-                contents: Buffer.from(contents)
+                contents: Buffer.from(contents),
             });
             this.emit(`data`, output);
 
@@ -71,7 +73,10 @@ export function kvToJS(options: KVToJSOptions) {
             if (types) {
                 console.log(`${PLUGIN_NAME} Begin to generate typings, please wait!`);
                 let types = JsonToTS(mergedFile);
-                types[0] = types[0].split('\n').map((t, i) => i == 0 ? `declare interface ${jsMountPointTypingName} {` : t).join('\n');
+                types[0] = types[0]
+                    .split('\n')
+                    .map((t, i) => (i == 0 ? `declare interface ${jsMountPointTypingName} {` : t))
+                    .join('\n');
                 for (let i = 1; i < types.length; i++) {
                     types[i] = `declare ${types[i]}`;
                 }
@@ -81,7 +86,7 @@ export function kvToJS(options: KVToJSOptions) {
                     cwd: firstFile.cwd,
                     base: firstFile.base,
                     path: path.join(firstFile.base, typingsFileName),
-                    contents: Buffer.from(types.join("\n"))
+                    contents: Buffer.from(types.join('\n')),
                 });
                 this.emit(`data`, typesOutput);
             }

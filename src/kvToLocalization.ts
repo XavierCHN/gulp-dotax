@@ -4,8 +4,7 @@ import Vinyl from 'vinyl';
 import glob from 'glob';
 import fs, { existsSync } from 'fs-extra';
 import _ from 'lodash';
-import Papa, { parse } from 'papaparse';
-import path from 'path';
+import Papa from 'papaparse';
 
 const keyvalues = require('keyvalues-node');
 
@@ -63,7 +62,7 @@ export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
             `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`,
         );
     }
-    let csv = fs.readFileSync(csvFilePath, 'utf-8');
+    let csv = fs.readFileSync(csvFilePath, 'utf-8').replace(/^\uFEFF/, '');
     let parsed = Papa.parse(csv, { header: true });
     let data = parsed.data as { [key: string]: string | number; }[];
     let header = parsed.meta.fields;
@@ -86,7 +85,7 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
             `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`
         );
     }
-    let csv = fs.readFileSync(csvFilePath, 'utf-8');
+    let csv = fs.readFileSync(csvFilePath, 'utf-8').replace(/^\uFEFF/, '');
     let parsed = Papa.parse(csv, { header: true });
     let headers = parsed.meta.fields;
     let tokenKey = headers[0];
@@ -123,7 +122,7 @@ export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: stri
             `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`
         );
     }
-    let csv = fs.readFileSync(csvFilePath, 'utf8');
+    let csv = fs.readFileSync(csvFilePath, 'utf8').replace(/^\uFEFF/, '');;
     let parsed = Papa.parse(csv, { header: true });
     let data = parsed.data as { [key: string]: string | number; }[];
     let header = parsed.meta.fields;
@@ -180,7 +179,7 @@ export function updateLocalFilesFromCSV(
     // 读取addon.csv中已经修改的内容
     const csvFiles = glob.sync(`${existedLocalsPath}/*.csv`);
     csvFiles.forEach((csvFileName) => {
-        let csv = fs.readFileSync(csvFileName, 'utf8');
+        let csv = fs.readFileSync(csvFileName, 'utf8').replace(/^\uFEFF/, '');
         let parsed = Papa.parse(csv, { header: true });
         let data = parsed.data as { [key: string]: string | number; }[];
         let header = parsed.meta.fields;

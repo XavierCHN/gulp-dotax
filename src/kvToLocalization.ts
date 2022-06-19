@@ -370,8 +370,8 @@ export function kvToLocalsCSV(csvPath: string, options?: KVToLocalizationOptions
                                 tokens = _.uniq(
                                     _.concat(
                                         tokens,
-                                        `dota_tooltip_modifier_${modifierName}`,
-                                        `dota_tooltip_modifier_${modifierName}_description`
+                                        `dota_tooltip_${modifierName}`,
+                                        `dota_tooltip_${modifierName}_description`
                                     )
                                 );
                             });

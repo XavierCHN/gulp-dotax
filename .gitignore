@@ -5,3 +5,4 @@ npc
 dist
 localizations
 kv
+*.tgz

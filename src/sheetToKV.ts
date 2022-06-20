@@ -91,10 +91,6 @@ export function sheetToKV(options: SheetToKVOptions) {
                     // 获取该单元格的值
                     let cell: string = row[i];
 
-                    if (attachWearablesBlock && key !== `AttachWearables[{]`) {
-                        return `${indentStr}"${key}" { "ItemDef" "${cell}" }`;
-                    }
-
                     if (abilityValuesBlock && key !== `AbilityValues[{]`) {
                         if (cell == `` || cell == undefined) return;
                         let values_key = '';
@@ -123,6 +119,10 @@ export function sheetToKV(options: SheetToKVOptions) {
 
                     if ((cell === `` || cell === undefined) && !/^Ability[0-9]{1,2}/.test(key)) {
                         return;
+                    }
+
+                    if (attachWearablesBlock && key !== `AttachWearables[{]`) {
+                        return `${indentStr}"${key}" { "ItemDef" "${cell}" }`;
                     }
 
                     return `${indentStr}"${key}" "${deal_with_kv_value(cell)}"`;

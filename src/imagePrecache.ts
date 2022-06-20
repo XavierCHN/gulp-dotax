@@ -19,7 +19,7 @@ export function imagePrecacche(root: string, fileName?: string) {
         const file = new Vinyl({
             cwd: firstFile.cwd,
             base: firstFile.base,
-            path: path.join(firstFile.base, `${fileName ? fileName : 'image_precache'}.css`),
+            path: path.join(firstFile.base, `${fileName || 'image_precache'}.css`),
             contents: Buffer.from(content),
         });
         //@ts-ignore

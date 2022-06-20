@@ -86,8 +86,7 @@ export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
     try {
         fs.writeFileSync(csvFilePath, csvContent);
     } catch (e) {
-        console.log(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程`);
-        console.log(e);
+        console.log(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程！`);
     }
 }
 
@@ -129,8 +128,7 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
     try {
         fs.writeFileSync(csvFilePath, `\ufeff${csvContent}`);
     } catch (e) {
-        console.log(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程`);
-        console.log(e);
+        console.log(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程!`);
     }
 }
 
@@ -170,8 +168,7 @@ export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: stri
     try {
         fs.writeFileSync(csvFilePath, csvContent);
     } catch (e) {
-        console.log(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程`);
-        console.log(e);
+        console.log(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程！`);
     }
 }
 

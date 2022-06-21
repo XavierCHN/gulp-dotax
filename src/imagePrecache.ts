@@ -2,7 +2,7 @@ import Vinyl from 'vinyl';
 import path from 'path';
 import through2 from 'through2';
 
-export function imagePrecacche(root: string) {
+export function imagePrecacche(root: string, fileName?: string) {
     let files: string[] = [];
     let firstFile: Vinyl;
     function collect(file: Vinyl, enc: any, next: Function) {
@@ -26,7 +26,7 @@ export function imagePrecacche(root: string) {
         const file = new Vinyl({
             cwd: firstFile.cwd,
             base: firstFile.base,
-            path: path.join(firstFile.base, 'image_precache.css'),
+            path: path.join(firstFile.base, `${fileName || 'image_precache'}.css`),
             contents: Buffer.from(content),
         });
         //@ts-ignore

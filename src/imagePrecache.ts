@@ -7,7 +7,14 @@ export function imagePrecacche(root: string) {
     let firstFile: Vinyl;
     function collect(file: Vinyl, enc: any, next: Function) {
         if (firstFile == null) firstFile = file;
-        files.push(path.relative(root, file.path).replace(/\\/g, '/'));
+        let relativePath = path.relative(root, file.path);
+        // 如果名称包含中文，那么略过
+        if (/[\u4e00-\u9fa5]+/g.test(relativePath)) {
+            console.log("ignore file since it contains chinese: " + relativePath);
+            next();
+            return;
+        }
+        files.push(relativePath.replace(/\\/g, '/'));
         next();
     }
     function write(done: Function) {

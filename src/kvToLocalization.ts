@@ -73,7 +73,7 @@ export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
     let csv = fs.readFileSync(csvFilePath, 'utf-8').toString();
     csv = removeBOM(csv);
     let parsed = Papa.parse(csv, { header: true });
-    let data = parsed.data as { [key: string]: string | number }[];
+    let data = parsed.data as { [key: string]: string | number; }[];
     let header = parsed.meta.fields;
     let tokenKey = header[0];
     if (tokenKey == null) tokenKey = 'Tokens';
@@ -103,7 +103,7 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
     let parsed = Papa.parse(csv, { header: true });
     let headers = parsed.meta.fields;
     let tokenKey = headers[0];
-    let data = parsed.data as { [key: string]: string | number }[];
+    let data = parsed.data as { [key: string]: string | number; }[];
     files.forEach((file) => {
         let content = fs.readFileSync(file, 'utf-8').toString();
         console.log('trying to get tokens from file: ' + file);
@@ -132,7 +132,7 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
     }
 }
 
-export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: string]: string }[]) {
+export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: string]: string; }[]) {
     if (!existsSync(csvFilePath)) {
         fs.writeFileSync(
             csvFilePath,
@@ -142,7 +142,7 @@ export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: stri
     let csv = fs.readFileSync(csvFilePath, 'utf8').toString();
     csv = removeBOM(csv);
     let parsed = Papa.parse(csv, { header: true });
-    let data = parsed.data as { [key: string]: string | number }[];
+    let data = parsed.data as { [key: string]: string | number; }[];
     let header = parsed.meta.fields;
     let tokenKey = header[0];
     if (tokenKey == null) tokenKey = 'Tokens';
@@ -199,13 +199,14 @@ export function updateLocalFilesFromCSV(
         });
     }
 
+    const __existedTokens: string[] = [];
     // 读取addon.csv中已经修改的内容
     const csvFiles = glob.sync(`${existedLocalsPath}/*.csv`);
     csvFiles.forEach((csvFileName) => {
         let csv = fs.readFileSync(csvFileName, 'utf8').toString();
         csv = removeBOM(csv);
         let parsed = Papa.parse(csv, { header: true });
-        let data = parsed.data as { [key: string]: string | number }[];
+        let data = parsed.data as { [key: string]: string | number; }[];
         let header = parsed.meta.fields;
         let tokenKey = header[0];
         if (tokenKey == null) tokenKey = 'Tokens';
@@ -213,6 +214,11 @@ export function updateLocalFilesFromCSV(
         data.forEach((row) => {
             let tokenName = row[tokenKey];
             if (tokenName == null) return;
+            if (__existedTokens.includes(tokenName)) {
+                console.log(`csv检测到重复的：${tokenName}`);
+            } else {
+                __existedTokens.push(tokenName);
+            }
             languages.forEach((language) => {
                 let tokenValue = row[language];
                 if (tokenValue == null) return;

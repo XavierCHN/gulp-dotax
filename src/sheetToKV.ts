@@ -210,11 +210,13 @@ ${kv_data_str}
 }
 `;
 
-                const new_path = `${sheet_name}${kvFileExt}`;
+                const kvBaseName = `${sheet_name}${kvFileExt}`;
 
-                console.log(`${PLUGIN_NAME} Writing sheet content to ${new_path}`);
+                console.log(`${PLUGIN_NAME} Writing sheet content to ${kvBaseName}`);
                 const kv_file = new Vinyl({
-                    path: new_path,
+                    base: file.base,
+                    path: file.path,
+                    basename: kvBaseName,
                     contents: Buffer.from(out_put),
                 });
 

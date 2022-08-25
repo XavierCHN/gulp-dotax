@@ -91,7 +91,12 @@ export function sheetToKV(options: SheetToKVOptions) {
                     // 获取该单元格的值
                     let cell: string = row[i];
 
-                    if (attachWearablesBlock && key !== `AttachWearables[{]`) {
+                    if (
+                        attachWearablesBlock &&
+                        key !== `AttachWearables[{]` &&
+                        cell != `` &&
+                        cell != undefined
+                    ) {
                         return `${indentStr}"${key}" { "ItemDef" "${cell}" }`;
                     }
 

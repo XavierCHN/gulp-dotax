@@ -63,6 +63,7 @@ export function sheetToKV(options: SheetToKVOptions) {
 
         let attachWearablesBlock = false;
         let abilityValuesBlock = false;
+        let varIndex = 0;
         let indentLevel = 1;
 
         return (
@@ -111,6 +112,10 @@ export function sheetToKV(options: SheetToKVOptions) {
                         if (isNaN(Number(datas[0]))) {
                             values_key = datas[0];
                             cell = cell.replace(`${datas[0]} `, '');
+                        }
+                        if (values_key == '') {
+                            values_key = `unknown_var_${varIndex}`;
+                            varIndex++;
                         }
 
                         return `${indentStr}"${values_key}" "${cell}"`;

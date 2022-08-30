@@ -274,6 +274,7 @@ export function csvToLocals(localsPath: string) {
         // get the dirname of the file
         // it is ok to pass [] to the function, since it will update all languages from .csv header
         updateLocalFilesFromCSV(localsPath);
+        callback();
     });
 }
 

@@ -20,7 +20,9 @@ export function kvToJS() {
 
         try {
             const kv = keyvalues.decode(file.contents.toString());
-            const jsonData = JSON.stringify(kv, undefined, "  ");
+            const kvKeys = Object.keys(kv);
+            const kvData = kvKeys.length === 1 ? kv[kvKeys[0]] : kv;
+            const jsonData = JSON.stringify(kvData, undefined, '  ');
             // change base of file.basename to .json
             const jsonFileName = file.basename.replace(path.extname(file.basename), ".json");
             const jsonFile = new Vinyl({

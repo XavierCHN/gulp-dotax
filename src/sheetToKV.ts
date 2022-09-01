@@ -144,7 +144,7 @@ export function sheetToKV(options: SheetToKVOptions) {
             `${indent}}`
         );
     }
-
+    let generatedKV: string[] = [];
     function convert(this: any, file: Vinyl, enc: any, callback: Function) {
         if (file.isNull()) return callback(null, file);
         if (file.isStream()) return callback(new Error(`${PLUGIN_NAME} Streaming not supported`));
@@ -164,6 +164,9 @@ export function sheetToKV(options: SheetToKVOptions) {
             workbook.forEach((sheet) => {
                 let sheet_name = sheet.name;
 
+                if (generatedKV.includes(sheet_name)) {
+                    throw new Error(`[ERROR] Sheet name ${sheet_name} is duplicated!`);
+                }
 
                 if (new RegExp(sheetsIgnore).test(sheet_name)) {
                     console.log(`${PLUGIN_NAME} Ignoring sheet ${sheet_name} in workbook ${file.path}`);

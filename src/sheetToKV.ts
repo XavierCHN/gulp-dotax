@@ -145,17 +145,17 @@ export function sheetToKV(options: SheetToKVOptions) {
         );
     }
     let generatedKV: string[] = [];
-    function convert(this: any, file: Vinyl, enc: any, callback: Function) {
-        if (file.isNull()) return callback(null, file);
-        if (file.isStream()) return callback(new Error(`${PLUGIN_NAME} Streaming not supported`));
+    function convert(this: any, file: Vinyl, enc: any, next: Function) {
+        if (file.isNull()) return next(null, file);
+        if (file.isStream()) return next(new Error(`${PLUGIN_NAME} Streaming not supported`));
         if (file.basename.startsWith(`~$`)) {
             console.log(`${PLUGIN_NAME} Ignore empty kv file ${file.basename}`);
-            return;
+            return next();
         }
         // ignore files that are not xlsx,xls
         if (!file.basename.endsWith(`.xlsx`) && !file.basename.endsWith(`.xls`)) {
             console.log(`${PLUGIN_NAME} ignore non-xlsx file ${file.basename}`);
-            return;
+            return next();
         }
 
         if (file.isBuffer()) {
@@ -236,7 +236,7 @@ ${kv_data_str}
                 this.push(kv_file);
             });
         }
-        callback();
+        next();
     }
     return through2.obj(convert);
 }

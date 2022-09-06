@@ -22,6 +22,8 @@ export interface SheetToKVOptions {
     autoSimpleKV?: boolean;
     /** KV文件的扩展名，默认为 .txt */
     kvFileExt?: string;
+    /** 强制输出空格的单元格内容（如果单元格内容为此字符串，输出为 "key" "" */
+    forceEmptyToken?: string;
 }
 
 export function sheetToKV(options: SheetToKVOptions) {
@@ -61,6 +63,8 @@ export function sheetToKV(options: SheetToKVOptions) {
         }
 
         if (value == undefined) return '';
+
+        if (forceEmptyToken == value) return '';
 
         return value;
     }

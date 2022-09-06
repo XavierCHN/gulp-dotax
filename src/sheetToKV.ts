@@ -8,12 +8,19 @@ import { pinyin, customPinyin } from 'pinyin-pro';
 const PLUGIN_NAME = 'gulp-dotax:sheetToKV';
 
 export interface SheetToKVOptions {
+    /** 需要略过的表格的正则表达式 */
     sheetsIgnore?: string;
+    /** 是否启用啰嗦模式 */
     verbose?: boolean;
+    /** 是否将汉语转换为拼音 */
     chineseToPinyin?: boolean;
+    /** 自定义的拼音 */
     customPinyins?: Record<string, string>;
+    /** KV的缩进方式，默认为四个空格 */
     indent?: string;
+    /** 是否将只有两列的表输出为简单键值对 */
     autoSimpleKV?: boolean;
+    /** KV文件的扩展名，默认为 .txt */
     kvFileExt?: string;
 }
 
@@ -22,6 +29,7 @@ export function sheetToKV(options: SheetToKVOptions) {
         customPinyins = {},
         sheetsIgnore = /^\s*$/,
         verbose = false,
+        forceEmptyToken = `__empty__`,
         autoSimpleKV = true,
         kvFileExt = '.txt',
         chineseToPinyin = true,

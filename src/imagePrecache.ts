@@ -36,7 +36,8 @@ export function imagePrecacche(root: string) {
             });
             //@ts-ignore
             this.push(file);
-        })
+        });
+        done();
     }
     return through2.obj(collect, write);
 }

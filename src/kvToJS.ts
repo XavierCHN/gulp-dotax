@@ -3,7 +3,6 @@ import PluginError from 'plugin-error';
 import through from 'through2';
 import Vinyl from 'vinyl';
 import path from 'path';
-import { each } from 'lodash';
 
 const keyvalues = require('keyvalues-node');
 

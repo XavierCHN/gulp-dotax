@@ -2,12 +2,12 @@ import gulp from 'gulp';
 import * as dotax from './src';
 
 const paths: { [key: string]: string } = {
-    excels: 'excels',
-    kv: 'game/scripts/npc',
-    src_json: 'game/scripts/src/json',
-    panorama_json: 'content/panorama/src/json',
-    panorama: 'content/panorama',
-    game_resource: 'game/resource',
+    excels: 'test/excels',
+    kv: 'test/kv',
+    src_json: 'test/tstl_json',
+    panorama_json: 'test/panorama_json',
+    panorama: 'test/panorama',
+    game_resource: 'test/resource',
 };
 
 /**
@@ -179,3 +179,5 @@ gulp.task('build', gulp.series('predev'));
 gulp.task('jssync', gulp.series('sheet_2_kv', 'kv_2_js'));
 gulp.task('kv_to_local', kv_to_local());
 gulp.task('prod', gulp.series('predev'));
+
+gulp.task('default', gulp.series('predev'));

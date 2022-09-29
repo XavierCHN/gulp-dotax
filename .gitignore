@@ -1,8 +1,10 @@
 node_modules
 lib
 typings
-npc
 dist
 localizations
-kv
+test/kv
+test/panorama_json
+test/tstl_json
+test/resource/*.txt
 *.tgz

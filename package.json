@@ -1,6 +1,6 @@
 {
     "name": "gulp-dotax",
-    "version": "1.0.40",
+    "version": "1.0.41-alpha1.0",
     "description": "A helper gulp plugin collection to help dota2 modding",
     "main": "./lib/index.js",
     "types": "./typings/index.d.ts",

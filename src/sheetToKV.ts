@@ -35,7 +35,7 @@ export function sheetToKV(options: SheetToKVOptions) {
         autoSimpleKV = true,
         kvFileExt = '.txt',
         chineseToPinyin = true,
-        indent = '    '
+        indent = '    ',
     } = options;
 
     customPinyin(customPinyins);
@@ -47,7 +47,9 @@ export function sheetToKV(options: SheetToKVOptions) {
         let match = s.match(reg);
         if (match != null) {
             match.forEach((m) => {
-                s = s.replace(m, pinyin(m, { toneType: 'none', type: 'array' }).join('_')).replace('ü', 'v');
+                s = s
+                    .replace(m, pinyin(m, { toneType: 'none', type: 'array' }).join('_'))
+                    .replace('ü', 'v');
             });
         }
         return s;
@@ -181,13 +183,17 @@ export function sheetToKV(options: SheetToKVOptions) {
                 }
 
                 if (new RegExp(sheetsIgnore).test(sheet_name)) {
-                    console.log(`${PLUGIN_NAME} Ignoring sheet ${sheet_name} in workbook ${file.path}`);
+                    console.log(
+                        `${PLUGIN_NAME} Ignoring sheet ${sheet_name} in workbook ${file.path}`
+                    );
                     return;
                 }
 
                 // 如果名称中包含中文，那么弹出一个提示，说可以把中文名称的表格忽略
                 if (sheet_name.match(/[\u4e00-\u9fa5]+/g)) {
-                    console.log(`${PLUGIN_NAME} Warning: ${sheet_name} 包含中文，将其转换为英文输出`);
+                    console.log(
+                        `${PLUGIN_NAME} Warning: ${sheet_name} 包含中文，将其转换为英文输出`
+                    );
                     console.log(`如果你不想输出这个表，请将其名称加入sheetsIgnore中`);
                     sheet_name = convert_chinese_to_pinyin(sheet_name);
                 }
@@ -196,17 +202,21 @@ export function sheetToKV(options: SheetToKVOptions) {
                 const sheet_data_length = sheet_data.length;
                 if (sheet_data_length === 0) {
                     if (verbose) {
-                        console.log(`${PLUGIN_NAME} Ignoring empty sheet ${sheet_name} in workbook ${file.path}`);
+                        console.log(
+                            `${PLUGIN_NAME} Ignoring empty sheet ${sheet_name} in workbook ${file.path}`
+                        );
                     }
                     return;
                 }
 
-                let key_row = sheet_data[1].map(i => i.toString()); // 第二行为key行
+                let key_row = sheet_data[1].map((i) => i.toString()); // 第二行为key行
                 const kv_data = sheet_data.slice(2);
                 const kv_data_length = kv_data.length;
                 if (kv_data_length === 0) {
                     if (verbose) {
-                        console.log(`${PLUGIN_NAME} Ignoring no data sheet ${sheet_name} in workbook ${file.path}`);
+                        console.log(
+                            `${PLUGIN_NAME} Ignoring no data sheet ${sheet_name} in workbook ${file.path}`
+                        );
                     }
                     return;
                 }
@@ -247,6 +257,7 @@ ${kv_data_str}
                     contents: Buffer.from(out_put),
                 });
 
+                generatedKV.push(sheet_name);
                 this.push(kv_file);
             });
         }

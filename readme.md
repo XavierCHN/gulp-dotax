@@ -15,3 +15,6 @@ It is recommended to use `x-template` as a scaffold project for development, ple
 
 - 如果要在自己的项目使用，请参考本项目的gulpfile.ts
 - If you want to use this project in your own project, please refer to this project's gulpfile.ts
+
+### 如果你有新的功能需求，欢迎提issues或者pull requests
+if you have any new feature requests, issues and pull requests are welcome

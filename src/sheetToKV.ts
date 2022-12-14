@@ -3,6 +3,7 @@
 import through2 from 'through2';
 import xlsx from 'node-xlsx';
 import Vinyl from 'vinyl';
+import path from 'path';
 import { pinyin, customPinyin } from 'pinyin-pro';
 
 const PLUGIN_NAME = 'gulp-dotax:sheetToKV';
@@ -158,7 +159,7 @@ export function sheetToKV(options: SheetToKVOptions) {
             `${indent}}`
         );
     }
-    let generatedKV: string[] = [];
+    let genratedFiles: string[] = [];
     function convert(this: any, file: Vinyl, enc: any, next: Function) {
         if (file.isNull()) return next(null, file);
         if (file.isStream()) return next(new Error(`${PLUGIN_NAME} Streaming not supported`));
@@ -177,10 +178,6 @@ export function sheetToKV(options: SheetToKVOptions) {
             const workbook = xlsx.parse(file.contents);
             workbook.forEach((sheet) => {
                 let sheet_name = sheet.name;
-
-                if (generatedKV.includes(sheet_name)) {
-                    throw new Error(`[ERROR] Sheet name ${sheet_name} is duplicated!`);
-                }
 
                 if (new RegExp(sheetsIgnore).test(sheet_name)) {
                     console.log(
@@ -250,6 +247,15 @@ ${kv_data_str}
                 const kvBaseName = `${sheet_name}${kvFileExt}`;
 
                 console.log(`${PLUGIN_NAME} Writing sheet content to ${kvBaseName}`);
+
+                // if file already generated, throw an error
+                let fileDirectory = file.dirname;
+                let generaetdFileFullname = path.join(fileDirectory, kvBaseName);
+                if (genratedFiles.includes(generaetdFileFullname)) {
+                    throw new Error(`[ERROR] KVFile ${generaetdFileFullname} is duplicated!`);
+                }
+                genratedFiles.push(generaetdFileFullname);
+
                 const kv_file = new Vinyl({
                     base: file.base,
                     path: file.path,
@@ -257,7 +263,6 @@ ${kv_data_str}
                     contents: Buffer.from(out_put),
                 });
 
-                generatedKV.push(sheet_name);
                 this.push(kv_file);
             });
         }

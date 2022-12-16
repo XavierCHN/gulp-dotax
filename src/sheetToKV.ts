@@ -154,11 +154,12 @@ export function sheetToKV(options: SheetToKVOptions) {
                 })
                 .filter((row) => row != null)
                 .map((s) => (chineseToPinyin ? convert_chinese_to_pinyin(s) : s))
-                .join('\n') +
-            '\n' +
+                .join('\r\n') +
+            '\r\n' +
             `${indent}}`
         );
     }
+    
     let genratedFiles: string[] = [];
     function convert(this: any, file: Vinyl, enc: any, next: Function) {
         if (file.isNull()) return next(null, file);
@@ -224,13 +225,13 @@ export function sheetToKV(options: SheetToKVOptions) {
                     const kv_data_simple = kv_data.map((row) => {
                         return `\t"${row[0]}" "${row[1]}"`;
                     });
-                    kv_data_str = `${kv_data_simple.join('\n')}`;
+                    kv_data_str = `${kv_data_simple.join('\r\n')}`;
                 } else {
                     const kv_data_complex = kv_data.map((row) => {
                         if (row[0] == `` || row[0] == null) return;
                         return convert_row_to_kv(row, key_row);
                     });
-                    kv_data_str = `${kv_data_complex.join('\n')}`;
+                    kv_data_str = `${kv_data_complex.join('\r\n')}`;
                 }
 
                 const out_put = `
@@ -255,6 +256,9 @@ ${kv_data_str}
                     throw new Error(`[ERROR] KVFile ${generaetdFileFullname} is duplicated!`);
                 }
                 genratedFiles.push(generaetdFileFullname);
+
+                // convert all line ending from LF to CRLF in out_put
+                out_put.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
 
                 const kv_file = new Vinyl({
                     base: file.base,

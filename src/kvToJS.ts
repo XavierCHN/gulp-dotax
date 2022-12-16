@@ -72,6 +72,9 @@ export function kvToJS(options?: KVToJSOptions) {
                 },
                 '  '
             );
+            // convert all line ending from LF to CRLF
+            jsonData = jsonData.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
+
             // change base of file.basename to .json
             const jsonFileName = file.basename.replace(path.extname(file.basename), '.json');
             const jsonFile = new Vinyl({

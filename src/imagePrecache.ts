@@ -28,7 +28,7 @@ export function imagePrecacche(root: string) {
             
         fileGroups.forEach((files, i) => {
             let content = `.image-precache {\n${files.map((filename) => `\tbackground-image: url("file://{images}/${filename}");`).join("\n")}\n}`;
-            content = content.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
+            content = content.replace(/\r\n/g, '\n');
             const file = new Vinyl({
                 cwd: firstFile.cwd,
                 base: firstFile.base,

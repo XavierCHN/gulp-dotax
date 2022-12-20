@@ -51,7 +51,7 @@ export function kvToJS(options?: KVToJSOptions) {
                     }
                 });
             }
-            const jsonData = JSON.stringify(
+            let jsonData = JSON.stringify(
                 kvData,
                 (key, value) => {
                     // 如果是数字，直接输出数字

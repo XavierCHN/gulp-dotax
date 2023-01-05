@@ -735,7 +735,7 @@ each-props@^1.3.2:
     is-plain-object "^2.0.1"
     object.defaults "^1.1.0"
 
-easy-keyvalues@^1.0.12:
+easy-keyvalues@1.0.12:
   version "1.0.12"
   resolved "https://registry.npmmirror.com/easy-keyvalues/-/easy-keyvalues-1.0.12.tgz#da54e24102a3e8df0a21291c22d6665c0f010b0b"
   integrity sha512-1LEhtliPqzjGZWNMhLEqQRn+VqEcoJE+QHqJwRuDndjEdZzhFOkqjr0o0c9E79NJcZjLssdZkxl8HO+QHa4pzQ==

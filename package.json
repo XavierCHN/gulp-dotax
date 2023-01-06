@@ -13,8 +13,8 @@
         "node": ">=14"
     },
     "scripts": {
-        "build": "tsc",
-        "prepublish": "tsc"
+        "build": "tsc && gulp",
+        "prepublish": "tsc && gulp"
     },
     "publishConfig": {
         "registry": "https://registry.npmjs.org",

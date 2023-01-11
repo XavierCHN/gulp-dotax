@@ -57,7 +57,7 @@ export function sheetToKV(options: SheetToKVOptions) {
     }
 
     function deal_with_kv_value(value: string) {
-        if (!isNaN(parseFloat(value))) {
+        if (/^[0-9]+.?[0-9]*$/.test(value)) {
             let number = parseFloat(value);
             // if this is not an integer, max 4 digits after dot
             if (number % 1 !== 0) {

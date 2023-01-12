@@ -25,6 +25,8 @@ export interface SheetToKVOptions {
     kvFileExt?: string;
     /** 强制输出空格的单元格内容（如果单元格内容为此字符串，输出为 "key" "" */
     forceEmptyToken?: string;
+    /** 中文转换为英文的映射列表，这些中文将会被转换为对应的英文而非拼音 */
+    aliasList?: Record<string, string>;
 }
 
 export function sheetToKV(options: SheetToKVOptions) {
@@ -37,12 +39,23 @@ export function sheetToKV(options: SheetToKVOptions) {
         kvFileExt = '.txt',
         chineseToPinyin = true,
         indent = '    ',
+        aliasList = {},
     } = options;
 
     customPinyin(customPinyins);
 
+    const aliasKeys = Object.keys(aliasList)
+        // 按从长到短排序，这样可以保证别名的替换不会出现问题
+        .sort((a, b) => b.length - a.length);
+
     function convert_chinese_to_pinyin(da: string) {
         if (da == null || da.match == null) return da;
+
+        // 如果da中包含别名，那么先将别名替换掉（可能是中文替换中文，或者中文替换成英文等等）
+        aliasKeys.forEach((aliasKey) => {
+            da = da.replace(aliasKey, aliasList[aliasKey]);
+        });
+
         let s = da;
         let reg = /[\u4e00-\u9fa5]+/g;
         let match = s.match(reg);

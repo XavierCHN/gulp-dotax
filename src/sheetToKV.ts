@@ -69,7 +69,7 @@ export function sheetToKV(options: SheetToKVOptions) {
         return s;
     }
 
-    function deal_with_kv_value(value: string) {
+    function deal_with_kv_value(value: string): string {
         if (/^[0-9]+.?[0-9]*$/.test(value)) {
             let number = parseFloat(value);
             // if this is not an integer, max 4 digits after dot
@@ -146,6 +146,11 @@ export function sheetToKV(options: SheetToKVOptions) {
                             varIndex++;
                         }
 
+                        // 如果输出中包含 { } 等，那么直接输出value，不加双引号
+                        if (cell != null && cell.toString().includes('{')) {
+                            return `${indentStr}"${values_key}" ${cell}`;
+                        }
+                        
                         return `${indentStr}"${values_key}" "${cell}"`;
                     }
 
@@ -161,6 +166,13 @@ export function sheetToKV(options: SheetToKVOptions) {
 
                     if ((cell === `` || cell === undefined) && !/^Ability[0-9]{1,2}/.test(key)) {
                         return;
+                    }
+
+                    const output_value = deal_with_kv_value(cell);
+
+                    // 如果输出中包含 { } 等，那么直接输出value，不加双引号
+                    if (output_value != null && output_value.toString().includes('{')) {
+                        return `${indentStr}"${key}" ${output_value}`;
                     }
 
                     return `${indentStr}"${key}" "${deal_with_kv_value(cell)}"`;

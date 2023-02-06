@@ -147,7 +147,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                         }
 
                         // 如果输出中包含 { } 等，那么直接输出value，不加双引号
-                        if (cell != null && cell.toString().includes('{')) {
+                        if (cell != null && cell.toString().trimStart().startsWith('{')) {
                             return `${indentStr}"${values_key}" ${cell}`;
                         }
                         
@@ -171,7 +171,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                     const output_value = deal_with_kv_value(cell);
 
                     // 如果输出中包含 { } 等，那么直接输出value，不加双引号
-                    if (output_value != null && output_value.toString().includes('{')) {
+                    if (output_value != null && output_value.toString().trimStart().startsWith('{')) {
                         return `${indentStr}"${key}" ${output_value}`;
                     }
 

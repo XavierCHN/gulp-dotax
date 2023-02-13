@@ -139,7 +139,7 @@ const create_image_precache =
         const createImagePrecache = () => {
             return gulp
                 .src(imageFiles)
-                .pipe(dotax.imagePrecacche(`content/panorama/images/`))
+                .pipe(dotax.imagePrecache(`content/panorama/images/`))
                 .pipe(gulp.dest(paths.panorama));
         };
         if (watch) {

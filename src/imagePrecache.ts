@@ -2,7 +2,7 @@ import Vinyl from 'vinyl';
 import path from 'path';
 import through2 from 'through2';
 
-export function imagePrecacche(root: string) {
+export function imagePrecache(root: string) {
     let files: string[] = [];
     let firstFile: Vinyl;
     function collect(file: Vinyl, enc: any, next: Function) {

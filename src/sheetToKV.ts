@@ -49,7 +49,7 @@ export function sheetToKV(options: SheetToKVOptions) {
         chineseToPinyin = true,
         indent = '    ',
         aliasList = {},
-        addonCSVPath = undefiend,
+        addonCSVPath = null,
         addonCSVDefaultLang = `SChinese`,
     } = options;
 

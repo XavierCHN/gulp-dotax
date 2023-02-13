@@ -25,6 +25,7 @@ const sheet_2_kv =
                     dotax.sheetToKV({
                         sheetsIgnore: '^__', // 忽略以两个下划线开头的sheet
                         indent: `	`, // 自定义缩进
+                        addonCSVPath: `${paths.game_resource}/addon.csv`, // 本地化文件路径
                     })
                 )
                 .pipe(gulp.dest(paths.kv));

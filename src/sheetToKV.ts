@@ -5,6 +5,7 @@ import xlsx from 'node-xlsx';
 import Vinyl from 'vinyl';
 import path from 'path';
 import { pinyin, customPinyin } from 'pinyin-pro';
+import { pushNewLinesToCSVFile } from './kvToLocalization';
 
 const PLUGIN_NAME = 'gulp-dotax:sheetToKV';
 
@@ -27,6 +28,14 @@ export interface SheetToKVOptions {
     forceEmptyToken?: string;
     /** 中文转换为英文的映射列表，这些中文将会被转换为对应的英文而非拼音 */
     aliasList?: Record<string, string>;
+    /**
+     * 输出本地化文本到 addon.csv 文件，如果要启动，需要配置 addon.csv所在路径
+     * 使用方法：
+     *   将 sheet 的第二行写特定的key，例如 `#Loc{}_Lore`，{} 的内容将会被替换为第一列的主键
+     **/
+    addonCSVPath?: string;
+    /** addon.csv输出的默认语言，默认为SChinese */
+    addonCSVDefaultLang?: string;
 }
 
 export function sheetToKV(options: SheetToKVOptions) {
@@ -40,6 +49,8 @@ export function sheetToKV(options: SheetToKVOptions) {
         chineseToPinyin = true,
         indent = '    ',
         aliasList = {},
+        addonCSVPath = undefiend,
+        addonCSVDefaultLang = `SChinese`,
     } = options;
 
     customPinyin(customPinyins);
@@ -47,6 +58,9 @@ export function sheetToKV(options: SheetToKVOptions) {
     const aliasKeys = Object.keys(aliasList)
         // 按从长到短排序，这样可以保证别名的替换不会出现问题
         .sort((a, b) => b.length - a.length);
+    
+    // 本地化token列表
+    let locTokens: { [key: string]: string; }[] = [];
 
     function convert_chinese_to_pinyin(da: string) {
         if (da == null || da.match == null) return da;
@@ -127,6 +141,18 @@ export function sheetToKV(options: SheetToKVOptions) {
                         cell != undefined
                     ) {
                         return `${indentStr}"${key}" { "ItemDef" "${cell}" }`;
+                    }
+
+                    // 处理写excel文件中的本地化文本
+                    if (key.startsWith(`#Loc`)) {
+                        let locKey = key.replace(`#Loc`, ``).replace(`{}`, main_key);
+                        // 保存对应的本地化tokens
+                        locTokens.push({
+                            //TODO, 将Tokens修改为 addon.csv 第一行的第一个元素？
+                            KeyName: locKey,
+                            [addonCSVDefaultLang]: cell,
+                        });
+                        return; // 不输出到kv文件
                     }
 
                     if (abilityValuesBlock && key !== `AbilityValues[{]`) {
@@ -297,5 +323,13 @@ ${kv_data_str}
         }
         next();
     }
-    return through2.obj(convert);
+
+    function endStream() {
+        if (addonCSVPath != null) {
+            pushNewLinesToCSVFile(addonCSVPath, locTokens)
+        }
+        this.emit('end');
+    }
+
+    return through2.obj(convert, endStream);
 }

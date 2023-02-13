@@ -87,6 +87,8 @@ export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
         fs.writeFileSync(csvFilePath, csvContent);
     } catch (e) {
         console.log(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程！`);
+    } finally {
+        console.log(`成功将新的token写入csv文件！${csvFilePath}`)
     }
 }
 
@@ -122,6 +124,48 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
             }
         });
     });
+    // 必须保证第一个元素有所有的header
+    headers.forEach((h) => (data[0][h] = data[0][h] || ''));
+    let csvContent = Papa.unparse(data);
+    try {
+        fs.writeFileSync(csvFilePath, `\ufeff${csvContent}`);
+    } catch (e) {
+        console.log(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程!`);
+    }
+}
+
+export function pushNewLinesToCSVFile(csvFilePath: string, localData: {
+    KeyName: string; // 键名
+    [key: string]: string; // 语言 -> 文本
+}[]) {
+    if (!existsSync(csvFilePath)) {
+        fs.writeFileSync(
+            csvFilePath,
+            `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`
+        );
+    }
+    let csv = fs.readFileSync(csvFilePath, 'utf-8').toString();
+    csv = removeBOM(csv);
+    let parsed = Papa.parse(csv, { header: true });
+    let headers = parsed.meta.fields;
+    let tokenKey = headers[0];
+    let data = parsed.data as { [key: string]: string | number; }[];
+    localData.forEach(line => {
+        const keyName = line.KeyName;
+        if (data.find((row) => row[tokenKey] == keyName) == null) {
+            data.push({
+                [tokenKey]: keyName,
+                ..._.omit(line, 'KeyName')
+            });
+        } else {
+            const index = data.findIndex((row) => row[tokenKey] == keyName);
+            Object.keys(line).forEach(kk => {
+                if (kk != 'KeyName') {
+                    data[index][kk] = line[kk];
+                }
+            })
+        }
+    })
     // 必须保证第一个元素有所有的header
     headers.forEach((h) => (data[0][h] = data[0][h] || ''));
     let csvContent = Papa.unparse(data);

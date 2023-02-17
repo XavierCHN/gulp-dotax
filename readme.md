@@ -34,6 +34,8 @@ This is a currently in testing phase, to help developers to develop dota2 custom
 
 4. 在kv文件中直接写本地化文本，只需将第二行的key修改为`#Loc{}_Description`，其中，`#Loc`会被替换为空白字符，`{}`会被替换为第一列的主键，本地化文本的内容将会被输出到参数中定义的`addon.csv`文件中
 
+5. 对于技能的本地化，有一个特殊的东西是 `AbilityValues` 的本地化，如果要使用此功能，请在 `AbilityValues[{]` 后，在每个要使用的数值前插入一行，将他的key修改为 `#ValuesLoc`，并在下方的单元格中填入本地化文本内容，具体请查看本项目中的 `test.xlsx` 的写法
+
 #### 使用示例
 
 ```Typescript

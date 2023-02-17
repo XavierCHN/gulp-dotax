@@ -60,6 +60,7 @@
         "typescript": "^4.7.4"
     },
     "dependencies": {
+        "cli-color": "^2.0.3",
         "easy-keyvalues": "1.0.12",
         "fs-extra": "^10.1.0",
         "gulp": "^4.0.2",

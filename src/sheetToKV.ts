@@ -7,6 +7,8 @@ import path from 'path';
 import { pinyin, customPinyin } from 'pinyin-pro';
 import { pushNewLinesToCSVFile } from './kvToLocalization';
 
+const cli = require('cli-color');
+
 const PLUGIN_NAME = 'gulp-dotax:sheetToKV';
 
 export interface SheetToKVOptions {
@@ -58,9 +60,9 @@ export function sheetToKV(options: SheetToKVOptions) {
     const aliasKeys = Object.keys(aliasList)
         // 按从长到短排序，这样可以保证别名的替换不会出现问题
         .sort((a, b) => b.length - a.length);
-    
+
     // 本地化token列表
-    let locTokens: { [key: string]: string; }[] = [];
+    let locTokens: { [key: string]: string }[] = [];
 
     function convert_chinese_to_pinyin(da: string) {
         if (da == null || da.match == null) return da;
@@ -100,8 +102,15 @@ export function sheetToKV(options: SheetToKVOptions) {
     }
 
     function convert_row_to_kv(row: string[], key_row: string[]): string {
+        function checkSpace(key: string) {
+            if (typeof key == 'string' && key.trim != null && key != key.trim()) {
+                console.warn(cli.red(`${main_key} 键值对中的 ${key} 前后有空格，请检查！`));
+            }
+        }
+
         // 第一列为主键
         let main_key = row[0];
+        checkSpace(main_key);
 
         let attachWearablesBlock = false;
         let abilityValuesBlock = false;
@@ -111,6 +120,9 @@ export function sheetToKV(options: SheetToKVOptions) {
         return (
             key_row
                 .map((key, i) => {
+                    // 判断key前后是否有空格，如果有，那么输出一个警告
+                    checkSpace(key);
+
                     // 跳过没有的key
                     if (key == null || key == undefined || key == ``) return;
 
@@ -133,6 +145,7 @@ export function sheetToKV(options: SheetToKVOptions) {
 
                     // 获取该单元格的值
                     let cell: string = row[i];
+                    checkSpace(cell);
 
                     if (
                         attachWearablesBlock &&
@@ -176,7 +189,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                         if (cell != null && cell.toString().trimStart().startsWith('{')) {
                             return `${indentStr}"${values_key}" ${cell}`;
                         }
-                        
+
                         return `${indentStr}"${values_key}" "${cell}"`;
                     }
 
@@ -197,7 +210,10 @@ export function sheetToKV(options: SheetToKVOptions) {
                     const output_value = deal_with_kv_value(cell);
 
                     // 如果输出中包含 { } 等，那么直接输出value，不加双引号
-                    if (output_value != null && output_value.toString().trimStart().startsWith('{')) {
+                    if (
+                        output_value != null &&
+                        output_value.toString().trimStart().startsWith('{')
+                    ) {
                         return `${indentStr}"${key}" ${output_value}`;
                     }
 
@@ -221,7 +237,7 @@ export function sheetToKV(options: SheetToKVOptions) {
         }
         // ignore files that are not xlsx,xls
         if (!file.basename.endsWith(`.xlsx`) && !file.basename.endsWith(`.xls`)) {
-            console.log(`${PLUGIN_NAME} ignore non-xlsx file ${file.basename}`);
+            console.log(cli.green(`${PLUGIN_NAME} ignore non-xlsx file ${file.basename}`));
             return next();
         }
 
@@ -241,9 +257,11 @@ export function sheetToKV(options: SheetToKVOptions) {
                 // 如果名称中包含中文，那么弹出一个提示，说可以把中文名称的表格忽略
                 if (sheet_name.match(/[\u4e00-\u9fa5]+/g)) {
                     console.log(
-                        `${PLUGIN_NAME} Warning: ${sheet_name} 包含中文，将其转换为英文输出`
+                        cli.yellow(
+                            `${PLUGIN_NAME} Warning: ${sheet_name} 包含中文，将其转换为英文输出`
+                        )
                     );
-                    console.log(`如果你不想输出这个表，请将其名称加入sheetsIgnore中`);
+                    console.log(cli.yellow(`如果你不想输出这个表，请将其名称加入sheetsIgnore中`));
                     sheet_name = convert_chinese_to_pinyin(sheet_name);
                 }
 
@@ -252,7 +270,9 @@ export function sheetToKV(options: SheetToKVOptions) {
                 if (sheet_data_length === 0) {
                     if (verbose) {
                         console.log(
-                            `${PLUGIN_NAME} Ignoring empty sheet ${sheet_name} in workbook ${file.path}`
+                            cli.red(
+                                `${PLUGIN_NAME} Ignoring empty sheet ${sheet_name} in workbook ${file.path}`
+                            )
                         );
                     }
                     return;
@@ -264,7 +284,9 @@ export function sheetToKV(options: SheetToKVOptions) {
                 if (kv_data_length === 0) {
                     if (verbose) {
                         console.log(
-                            `${PLUGIN_NAME} Ignoring no data sheet ${sheet_name} in workbook ${file.path}`
+                            cli.red(
+                                `${PLUGIN_NAME} Ignoring no data sheet ${sheet_name} in workbook ${file.path}`
+                            )
                         );
                     }
                     return;
@@ -326,7 +348,7 @@ ${kv_data_str}
 
     function endStream() {
         if (addonCSVPath != null) {
-            pushNewLinesToCSVFile(addonCSVPath, locTokens)
+            pushNewLinesToCSVFile(addonCSVPath, locTokens);
         }
         this.emit('end');
     }

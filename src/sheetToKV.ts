@@ -117,6 +117,8 @@ export function sheetToKV(options: SheetToKVOptions) {
         let varIndex = 0;
         let indentLevel = 1;
 
+        let locAbilitySpecial = null;
+
         return (
             key_row
                 .map((key, i) => {
@@ -183,6 +185,25 @@ export function sheetToKV(options: SheetToKVOptions) {
                         if (values_key == '') {
                             values_key = `unknown_var_${varIndex}`;
                             varIndex++;
+                        }
+
+                        // 如果key是 #LocValues，那么则作为本地化文本暂存
+                        if (key == `#ValuesLoc`) {
+                            // 暂存键值的本地化文本
+                            console.log(`[暂存本地化文本] ${main_key} : ${values_key} : ${cell}`);
+                            locAbilitySpecial = cell;
+                            return; // 不输出到kv文件中去
+                        }
+
+                        // 如果有暂存的本地化文本，那么作为下一个遇到的键值对的本地化文本输出到 addon.csv
+                        if (locAbilitySpecial != null) {
+                            let locKey = `dota_tooltip_ability_${main_key}_${values_key}`;
+                            // 保存对应的本地化tokens
+                            locTokens.push({
+                                KeyName: locKey,
+                                [addonCSVDefaultLang]: locAbilitySpecial,
+                            });
+                            locAbilitySpecial = null; // 重置本地化文本状态
                         }
 
                         // 如果输出中包含 { } 等，那么直接输出value，不加双引号

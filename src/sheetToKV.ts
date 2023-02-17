@@ -160,6 +160,8 @@ export function sheetToKV(options: SheetToKVOptions) {
 
                     // 处理写excel文件中的本地化文本
                     if (key.startsWith(`#Loc`)) {
+                        if (cell == `` || cell == undefined) return;
+                        if (cell.trim && cell.trim() == ``) return;
                         let locKey = key.replace(`#Loc`, ``).replace(`{}`, main_key);
                         // 保存对应的本地化tokens
                         locTokens.push({
@@ -189,8 +191,9 @@ export function sheetToKV(options: SheetToKVOptions) {
 
                         // 如果key是 #LocValues，那么则作为本地化文本暂存
                         if (key == `#ValuesLoc`) {
+                            if (cell == `` || cell == undefined) return;
+                            if (cell.trim && cell.trim() == ``) return;
                             // 暂存键值的本地化文本
-                            console.log(`[暂存本地化文本] ${main_key} : ${values_key} : ${cell}`);
                             locAbilitySpecial = cell;
                             return; // 不输出到kv文件中去
                         }

@@ -256,7 +256,7 @@ export function sheetToKV(options: SheetToKVOptions) {
         if (file.isNull()) return next(null, file);
         if (file.isStream()) return next(new Error(`${PLUGIN_NAME} Streaming not supported`));
         if (file.basename.startsWith(`~$`)) {
-            console.log(`${PLUGIN_NAME} Ignore empty kv file ${file.basename}`);
+            console.log(`${PLUGIN_NAME} Ignore temp xlsx file ${file.basename}`);
             return next();
         }
         // ignore files that are not xlsx,xls

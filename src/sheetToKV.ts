@@ -273,7 +273,7 @@ export function sheetToKV(options: SheetToKVOptions) {
 
                 if (new RegExp(sheetsIgnore).test(sheet_name)) {
                     console.log(
-                        cli.red(`${PLUGIN_NAME} Ignoring sheet ${sheet_name} in workbook ${file.path} 【已忽略表】`)
+                        cli.red(`${PLUGIN_NAME} Ignoring sheet ${sheet_name} in workbook ${file.path} 【已忽略表${sheet_name}】`)
                     );
                     return;
                 }

@@ -105,7 +105,13 @@ export function sheetToKV(options: SheetToKVOptions) {
         function checkSpace(key: string) {
             if (typeof key == 'string' && key.trim != null && key != key.trim()) {
                 key = key.trim();
-                console.warn(cli.red(`${main_key} 键值对中的 ${key} 前后有空格，已自动去掉空格，请检查！`));
+                console.warn(
+                    cli.red(
+                        `${main_key} 键值对中的 ${key} 前后有空格，已自动去掉空格，请检查！如果要强行使用空格，请使用&nbsp;`
+                    )
+                );
+                // 如果强行要写空格要写成 &nbsp;，这里把 &nbsp; 替换成空格
+                key = key.replace(/&nbsp;/g, ' ');
             }
         }
 
@@ -274,7 +280,9 @@ export function sheetToKV(options: SheetToKVOptions) {
 
                 if (new RegExp(sheetsIgnore).test(sheet_name)) {
                     console.log(
-                        cli.red(`${PLUGIN_NAME} Ignoring sheet ${sheet_name} in workbook ${file.path} 【已忽略表${sheet_name}】`)
+                        cli.red(
+                            `${PLUGIN_NAME} Ignoring sheet ${sheet_name} in workbook ${file.path} 【已忽略表${sheet_name}】`
+                        )
                     );
                     return;
                 }

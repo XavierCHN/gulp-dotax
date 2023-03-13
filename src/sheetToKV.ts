@@ -104,7 +104,8 @@ export function sheetToKV(options: SheetToKVOptions) {
     function convert_row_to_kv(row: string[], key_row: string[]): string {
         function checkSpace(key: string) {
             if (typeof key == 'string' && key.trim != null && key != key.trim()) {
-                console.warn(cli.red(`${main_key} 键值对中的 ${key} 前后有空格，请检查！`));
+                key = key.trim();
+                console.warn(cli.red(`${main_key} 键值对中的 ${key} 前后有空格，已自动去掉空格，请检查！`));
             }
         }
 

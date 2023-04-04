@@ -119,12 +119,15 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
         let tokens = locals.lang.Tokens;
         if (tokens == null) return;
         Object.keys(tokens).forEach((token) => {
+            // 如果其中存在双引号，那么将他转义成csv中的双引号
+            const val = tokens[token].replace(/"/g, '\\"');
+
             let row = data.find((row) => row[tokenKey] == token);
             if (row == null) {
-                data.push({ [tokenKey]: token, [lang]: tokens[token] });
+                data.push({ [tokenKey]: token, [lang]: val });
             } else {
                 let index = data.indexOf(row);
-                data[index][lang] = tokens[token];
+                data[index][lang] = val;
             }
         });
     });
@@ -251,7 +254,7 @@ export function updateLocalFilesFromCSV(
             languageData[language] = data.lang.Tokens || {};
             // escape \n in the tokens
             Object.keys(languageData[language]).forEach((token) => {
-                languageData[language][token] = languageData[language][token].replace(/\\n/g, '\n');
+                languageData[language][token] = languageData[language][token].replace(/\\n/g, '\n').replace(/\\"/g, '__DOUBLE_QUOTE__');
             });
         });
     }
@@ -280,7 +283,14 @@ export function updateLocalFilesFromCSV(
                 let tokenValue = row[language];
                 if (tokenValue == null) return;
                 languageData[language] = languageData[language] || {};
-                languageData[language][tokenName] = tokenValue.toString().replace('\n', '\\n');
+                let escapedToken = tokenValue.toString().replace('\n', '\\n').replace(/\\"/g, '__DOUBLE_QUOTE__');
+                // 如果有前面没有转义符的双引号存在，那么显示一个警告，并且将它转换成 __DOUBLE_QUOTE__
+                if (/[\\]{0}"/.test(escapedToken)) {
+                    console.log(cli.yellow(`csv检测到未转义的双引号：${tokenName}，强制将其转换为 '\\"'`));
+                    escapedToken = escapedToken.replace(/[\\]{0}"/g, '__DOUBLE_QUOTE__');
+                }
+
+                languageData[language][tokenName] = escapedToken;
             });
         });
     });
@@ -304,7 +314,7 @@ export function updateLocalFilesFromCSV(
         let langD = languageData[lang];
         // convert \n to \\n
         Object.keys(langD).forEach((token) => {
-            langD[token] = langD[token].replace(/\n/g, '\\n');
+            langD[token] = langD[token].replace(/\n/g, '\\n').replace(/__DOUBLE_QUOTE__/g, '\"');
             // if the content is null or empty, delete it
             if (langD[token] === null || langD[token] === '') {
                 delete langD[token];

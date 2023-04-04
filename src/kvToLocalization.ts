@@ -65,6 +65,20 @@ export interface KVToLocalizationOptions {
     exportAbilityValues?: boolean;
 }
 
+function escapeString(str: string) {
+    return str
+        .replace(/\"/g, '_escaped_double_quote_')
+        .replace(/\'/g, '_escaped_single_quote_')
+        .replace(/\n/g, '_escaped_new_line_');
+}
+
+function unescapeString(str: string) {
+    return str
+        .replace(/_escaped_double_quote_/g, '\\"')
+        .replace(/_escaped_single_quote_/g, "\\'")
+        .replace(/_escaped_new_line_/g, '\\n')
+}
+
 export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
     if (!existsSync(csvFilePath)) {
         fs.writeFileSync(
@@ -81,12 +95,12 @@ export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
     if (tokenKey == null) tokenKey = 'Tokens';
     tokens.forEach((token) => {
         if (data.find((row) => row[tokenKey] == token) == null) {
-            data.push({ [tokenKey]: token });
+            data.push({ [tokenKey]: escapeString(token) });
         }
     });
     let csvContent = `\ufeff${Papa.unparse(data)}`;
     try {
-        fs.writeFileSync(csvFilePath, csvContent);
+        fs.writeFileSync(csvFilePath, unescapeString(csvContent));
     } catch (e) {
         console.log(
             cli.red(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程！`)
@@ -120,11 +134,13 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
         if (tokens == null) return;
         Object.keys(tokens).forEach((token) => {
             let row = data.find((row) => row[tokenKey] == token);
+            const escapedToken = escapeString(tokens[token]);
+            if (token == `dota_ability_variable_health`) console.log(escapedToken);
             if (row == null) {
-                data.push({ [tokenKey]: token, [lang]: tokens[token] });
+                data.push({ [tokenKey]: token, [lang]: escapedToken });
             } else {
                 let index = data.indexOf(row);
-                data[index][lang] = tokens[token];
+                data[index][lang] = escapedToken;
             }
         });
     });
@@ -132,7 +148,7 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
     headers.forEach((h) => (data[0][h] = data[0][h] || ''));
     let csvContent = Papa.unparse(data);
     try {
-        fs.writeFileSync(csvFilePath, `\ufeff${csvContent}`);
+        fs.writeFileSync(csvFilePath, `\ufeff${unescapeString(csvContent)}`);
     } catch (e) {
         console.log(
             cli.red(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程!`)
@@ -170,7 +186,7 @@ export function pushNewLinesToCSVFile(
             const index = data.findIndex((row) => row[tokenKey] == keyName);
             Object.keys(line).forEach((kk) => {
                 if (kk != 'KeyName') {
-                    data[index][kk] = line[kk];
+                    data[index][kk] = escapeString(line[kk]);
                 }
             });
         }
@@ -179,7 +195,7 @@ export function pushNewLinesToCSVFile(
     headers.forEach((h) => (data[0][h] = data[0][h] || ''));
     let csvContent = Papa.unparse(data);
     try {
-        fs.writeFileSync(csvFilePath, `\ufeff${csvContent}`);
+        fs.writeFileSync(csvFilePath, `\ufeff${unescapeString(csvContent)}`);
     } catch (e) {
         console.log(
             cli.red(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程!`)
@@ -221,7 +237,7 @@ export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: stri
     });
     let csvContent = `\ufeff${Papa.unparse(data)}`;
     try {
-        fs.writeFileSync(csvFilePath, csvContent);
+        fs.writeFileSync(csvFilePath, unescapeString(csvContent));
     } catch (e) {
         console.log(
             cli.red(`文件写入失败，请检查权限或者文件是否被占用，跳过将本地化文本写入csv的过程！`)
@@ -251,7 +267,8 @@ export function updateLocalFilesFromCSV(
             languageData[language] = data.lang.Tokens || {};
             // escape \n in the tokens
             Object.keys(languageData[language]).forEach((token) => {
-                languageData[language][token] = languageData[language][token].replace(/\\n/g, '\n');
+                const tokenEscaped = escapeString(languageData[language][token]);
+                languageData[language][token] = tokenEscaped;
             });
         });
     }
@@ -280,7 +297,7 @@ export function updateLocalFilesFromCSV(
                 let tokenValue = row[language];
                 if (tokenValue == null) return;
                 languageData[language] = languageData[language] || {};
-                languageData[language][tokenName] = tokenValue.toString().replace('\n', '\\n');
+                languageData[language][tokenName] = tokenValue.toString();
             });
         });
     });
@@ -316,7 +333,7 @@ export function updateLocalFilesFromCSV(
                 Tokens: langD,
             },
         };
-        const fileContent = keyvalues.encode(data);
+        const fileContent = unescapeString(keyvalues.encode(data));
         const fileName = `addon_${lang.toLocaleLowerCase()}.txt`;
         console.log(`dotax:csvToLoclas is now writing ${fileName}`);
         fs.writeFileSync(`${localsPath}/${fileName}`, fileContent);

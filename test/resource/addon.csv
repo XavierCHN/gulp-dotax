@@ -4,4 +4,4 @@ test_unit_test,这是一个再又一个测试的本地化文本输出,这是一�
 test_unit1 _test,,这是一个再又一个测试的本地化文本输出
 dota_tooltip_ability_test_unit3_damage,,伤害
 Values,,"伤害"""
-dota_tooltip_ability_test_unit_test,,"测试\"""
+dota_tooltip_ability_test_unit_test,,测试

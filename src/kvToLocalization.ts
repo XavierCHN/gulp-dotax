@@ -20,6 +20,8 @@ const removeBOM = (content: string) => {
     return content;
 };
 
+const defaultCSVContent = { Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME', SChinese: '你的游戏名' }
+
 export interface KVToLocalizationOptions {
     /**
      * 自定义的前缀
@@ -69,7 +71,7 @@ export function pushNewTokensToCSV(csvFilePath: string, tokens: string[]) {
     if (!existsSync(csvFilePath)) {
         fs.writeFileSync(
             csvFilePath,
-            `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`
+            `\ufeff${Papa.unparse([defaultCSVContent])}`
         );
     }
     let csv = fs.readFileSync(csvFilePath, 'utf-8').toString();
@@ -101,7 +103,7 @@ export function localsToCSV(localsPath: string, csvFilePath: string) {
     if (!existsSync(csvFilePath)) {
         fs.writeFileSync(
             csvFilePath,
-            `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`
+            `\ufeff${Papa.unparse([defaultCSVContent])}`
         );
     }
     let csv = fs.readFileSync(csvFilePath, 'utf-8').toString();
@@ -153,7 +155,7 @@ export function pushNewLinesToCSVFile(
     if (!existsSync(csvFilePath)) {
         fs.writeFileSync(
             csvFilePath,
-            `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`
+            `\ufeff${Papa.unparse([defaultCSVContent])}`
         );
     }
     let csv = fs.readFileSync(csvFilePath, 'utf-8').toString();
@@ -194,7 +196,7 @@ export function pushNewLocalTokenToCSV(csvFilePath: string, locals: { [key: stri
     if (!existsSync(csvFilePath)) {
         fs.writeFileSync(
             csvFilePath,
-            `\ufeff${Papa.unparse([{ Tokens: 'addon_game_mode', English: 'YOUR ADDON NAME' }])}`
+            `\ufeff${Papa.unparse([defaultCSVContent])}`
         );
     }
     let csv = fs.readFileSync(csvFilePath, 'utf8').toString();

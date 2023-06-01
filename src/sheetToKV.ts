@@ -38,6 +38,10 @@ export interface SheetToKVOptions {
     addonCSVPath?: string;
     /** addon.csv输出的默认语言，默认为SChinese */
     addonCSVDefaultLang?: string;
+    /** 键值对的外部处理方法，如果提供，则所有键值对都会进行此操作
+     * 如果该方法返回 `` 或者 undefined 则该单元格会被忽略，不会输出到kv文件中
+     */
+    externalCellProcessor?: (key: string, value: string, row: string[]) => string | undefined | null;
 }
 
 export function sheetToKV(options: SheetToKVOptions) {
@@ -53,6 +57,7 @@ export function sheetToKV(options: SheetToKVOptions) {
         aliasList = {},
         addonCSVPath = null,
         addonCSVDefaultLang = `SChinese`,
+        externalCellProcessor = null,
     } = options;
 
     customPinyin(customPinyins);
@@ -232,6 +237,10 @@ export function sheetToKV(options: SheetToKVOptions) {
                         indentLevel--;
                         indentStr = (indent || `\t`).repeat(indentLevel);
                         return `${indentStr}}`;
+                    }
+
+                    if (externalCellProcessor != null) {
+                        cell = externalCellProcessor(key, cell, row);
                     }
 
                     if ((cell === `` || cell === undefined) && !/^Ability[0-9]{1,2}/.test(key)) {

@@ -4,6 +4,7 @@ import through from 'through2';
 import Vinyl from 'vinyl';
 import path from 'path';
 import { KeyValues, LoadKeyValuesSync, AutoLoadKeyValuesBaseSync } from 'easy-keyvalues';
+const cli = require('cli-color');
 
 const PLUGIN_NAME = `gulp-dotax:kvToJS`;
 
@@ -85,6 +86,8 @@ export function kvToJS(options?: KVToJSOptions) {
             });
             next(null, jsonFile);
         } catch (err) {
+            console.log('文件 ' + cli.redBright(file.path) + ' 解析失败，可能存在语法错误！')
+            console.log(cli.redBright(`[kvToJS] ${err}`))
             return next(new PluginError(PLUGIN_NAME, err), file);
         }
     };

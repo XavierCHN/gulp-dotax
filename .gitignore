@@ -8,3 +8,4 @@ test/panorama_json
 test/tstl_json
 test/resource/*.txt
 *.tgz
+~$*.xlsx

@@ -101,23 +101,29 @@ export function sheetToKV(options: SheetToKVOptions) {
         return value;
     }
 
+    
+
     function convert_row_to_kv(row: string[], key_row: string[]): string {
+        
+
+        // 第一列为主键
+        let main_key = row[0];
+
         function checkSpace(key: string) {
             if (typeof key == 'string' && key.trim != null && key != key.trim()) {
                 key = key.trim();
                 console.warn(
                     cli.red(
-                        `${main_key} 键值对中的 ${key} 前后有空格，已自动去掉空格，请检查！如果要强行使用空格，请使用&nbsp;`
+                        `${main_key} 中的 ${key} 前后有空格，已自动去掉空格，请检查！如果要强行使用空格，请使用&nbsp;`
                     )
                 );
                 // 如果强行要写空格要写成 &nbsp;，这里把 &nbsp; 替换成空格
                 key = key.replace(/&nbsp;/g, ' ');
             }
+            return key;
         }
 
-        // 第一列为主键
-        let main_key = row[0];
-        checkSpace(main_key);
+        main_key = checkSpace(main_key);
 
         let attachWearablesBlock = false;
         let abilityValuesBlock = false;

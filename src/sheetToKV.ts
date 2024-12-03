@@ -166,7 +166,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                     }
 
                     // 处理写excel文件中的本地化文本
-                    if (key.startsWith(`#Loc`)) {
+                    if (key.includes(`#Loc`)) {
                         if (cell == `` || cell == undefined) return;
                         if (cell.trim && cell.trim() == ``) return;
                         let locKey = key.replace(`#Loc`, ``).replace(`{}`, main_key);

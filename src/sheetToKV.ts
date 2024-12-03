@@ -104,8 +104,6 @@ export function sheetToKV(options: SheetToKVOptions) {
     
 
     function convert_row_to_kv(row: string[], key_row: string[]): string {
-        
-
         // 第一列为主键
         let main_key = row[0];
 

@@ -61,7 +61,7 @@
     },
     "dependencies": {
         "cli-color": "^2.0.3",
-        "easy-keyvalues": "1.0.12",
+        "easy-keyvalues": "^1.2.7",
         "fs-extra": "^10.1.0",
         "gulp": "^4.0.2",
         "keyvalues-node": "0.0.2",

@@ -33,7 +33,15 @@ export function kvToJS(options?: KVToJSOptions) {
         try {
             const kvFileName = file.path;
             const kv = await KeyValues.Load(kvFileName);
-            let kvData = kv.toObject();
+            let rawData = kv.toObject();
+
+            // 根据Valve的kv文件规则，这里需要丢弃根节点并且把所有的子节点合并
+            let kvData = {};
+            for (const rootKey in rawData) {
+                if (rawData.hasOwnProperty(rootKey)) {
+                    Object.assign(kvData, rawData[rootKey]);
+                }
+            }
 
             let jsonData = JSON.stringify(
                 kvData,

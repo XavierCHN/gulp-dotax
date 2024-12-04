@@ -11,7 +11,7 @@ const PLUGIN_NAME = `gulp-dotax:kvToJS`;
 export interface KVToJSOptions {
     // 是否将含有 ArraySeperator 的字符串转换为 array
     AutoConvertToArray?: boolean;
-    /** 数组的分隔符 目前是 竖杠 | 和 # 号 */
+    /** 数组的分隔符的政策表达式 目前是 竖杠 | 和 # 号 （ /[\|#]/ ）*/
     ArraySeperator?: string;
 }
 
@@ -34,19 +34,22 @@ export function kvToJS(options?: KVToJSOptions) {
             const kvFileName = file.path;
             const kv = await KeyValues.Load(kvFileName);
             let kvData = kv.toObject();
-            delete kvData['#base']; // 移除所有的 #base，他们不需要被输出
-            kvData = kvData[Object.keys(kvData)[0]] ?? {}; // 有可能主文件里面除了 #base 以外没有任何内容
-            
+
             let jsonData = JSON.stringify(
                 kvData,
                 (key, value) => {
+                    // 如果是空字符串，那么直接输出空字符串
+                    // 原因是 Number('') = 0，fuck javascript
+                    if (value === '') {
+                        return '';
+                    }
+
                     // 如果是数字，直接输出数字
                     if (typeof value === 'string' && !isNaN(Number(value))) {
                         return Number(value);
                     }
-                    // 如果是用 '|' 或者 '#' 分割的字符串，那么直接输出成数组
-                    // 如果AutoConvertToArray为true的话
-                    // 默认为true
+                    //  如果AutoConvertToArray为true的话，将使用 '|' 或者 '#' ( 取决于 ArraySeperator ) 分割的字符串，那么直接输出成数组
+                    //
                     if (
                         AutoConvertToArray &&
                         typeof value === 'string' &&

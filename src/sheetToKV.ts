@@ -166,6 +166,10 @@ export function sheetToKV(options: SheetToKVOptions) {
                         cell != `` &&
                         cell != undefined
                     ) {
+                        // 如果输出中包含 { } 等，那么直接输出value，不加双引号
+                        if (cell != null && cell.toString().trimStart().startsWith('{')) {
+                            return `${indentStr}"${key}" ${cell}`;
+                        }
                         return `${indentStr}"${key}" { "ItemDef" "${cell}" }`;
                     }
 
@@ -252,7 +256,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                         return `${indentStr}"${key}" ${output_value}`;
                     }
 
-                    return `${indentStr}"${key}" "${deal_with_kv_value(cell)}"`;
+                    return `${indentStr}"${key}" "${output_value}"`;
                 })
                 .filter((row) => row != null)
                 .map((s) => (chineseToPinyin ? convert_chinese_to_pinyin(s) : s))

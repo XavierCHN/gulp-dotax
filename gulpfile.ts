@@ -25,6 +25,7 @@ const sheet_2_kv =
                     dotax.sheetToKV({
                         sheetsIgnore: '^__.*|^Sheet[1-3]$', // 忽略以两个下划线开头的sheet
                         indent: `	`, // 自定义缩进
+                        keyRowNumber: 2, // 键值对的键所在行号，默认为 2
                         addonCSVPath: `${paths.game_resource}/addon.csv`, // 本地化文件路径
                     })
                 )

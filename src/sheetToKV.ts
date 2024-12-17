@@ -24,6 +24,8 @@ export interface SheetToKVOptions {
     indent?: string;
     /** 是否将只有两列的表输出为简单键值对 */
     autoSimpleKV?: boolean;
+    /** Key行行号，默认为2 */
+    keyRowNumber?: number;
     /** KV文件的扩展名，默认为 .txt */
     kvFileExt?: string;
     /** 强制输出空格的单元格内容（如果单元格内容为此字符串，输出为 "key" "" */
@@ -49,6 +51,7 @@ export function sheetToKV(options: SheetToKVOptions) {
         autoSimpleKV = true,
         kvFileExt = '.txt',
         chineseToPinyin = true,
+        keyRowNumber = 2,
         indent = '    ',
         aliasList = {},
         addonCSVPath = null,
@@ -319,8 +322,8 @@ export function sheetToKV(options: SheetToKVOptions) {
                     return;
                 }
 
-                let key_row = sheet_data[1].map((i) => i.toString()); // 第二行为key行
-                const kv_data = sheet_data.slice(2);
+                let key_row = sheet_data[keyRowNumber - 1].map((i) => i.toString()); // 第二行为key行
+                const kv_data = sheet_data.slice(keyRowNumber);
                 const kv_data_length = kv_data.length;
                 if (kv_data_length === 0) {
                     if (verbose) {

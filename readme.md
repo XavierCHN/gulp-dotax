@@ -20,7 +20,7 @@ This is a currently in testing phase, to help developers to develop dota2 custom
 
 1. 第一行为注释行，不写内容
 
-2. 第二行为key行，写kv的key，其中第一列的key会被忽略，作为kv的`二级主键`（输出的一级主键统一为`XLSXContent`，dota2引擎会忽略这一key）
+2. 第二行为key行（可以使用keyRowNumber修改），写kv的key，其中第一列的key会被忽略，作为kv的`二级主键`（输出的一级主键统一为`XLSXContent`，dota2引擎会忽略这一key）
 
 3. 如果有多级kv，本插件提供以下两种处理方式：1)在key后加`[{]`，以将后面直到匹配的下一个`[}]`之间的内容作为该key的value，2）在单元格中直接写完整的kv，如
 
@@ -80,6 +80,8 @@ export interface SheetToKVOptions {
     indent?: string;
     /** 是否将只有两列的表输出为简单键值对 */
     autoSimpleKV?: boolean;
+    /** Key行行号，默认为2，即第二行为key行 */
+    keyRowNumber?: number;
     /** KV文件的扩展名，默认为 .txt */
     kvFileExt?: string;
     /** 强制输出空格的单元格内容（如果单元格内容为此字符串，输出为 "key" "" */

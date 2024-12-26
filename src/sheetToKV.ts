@@ -245,7 +245,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                         return `${indentStr}}`;
                     }
 
-                    if ((isEmptyOrNullOrUndefined(key)) && !/^Ability[0-9]{1,2}/.test(key)) {
+                    if ((isEmptyOrNullOrUndefined(cell)) && !/^Ability[0-9]{1,2}/.test(key)) {
                         return;
                     }
 

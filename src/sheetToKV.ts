@@ -68,7 +68,7 @@ export function sheetToKV(options: SheetToKVOptions) {
     let locTokens: { [key: string]: string }[] = [];
 
     function convert_chinese_to_pinyin(da: string) {
-        if (da == null || da.match == null) return da;
+        if (da === null || da.match === null) return da;
 
         // 如果da中包含别名，那么先将别名替换掉（可能是中文替换中文，或者中文替换成英文等等）
         aliasKeys.forEach((aliasKey) => {
@@ -97,9 +97,9 @@ export function sheetToKV(options: SheetToKVOptions) {
             }
         }
 
-        if (value == undefined) return '';
+        if (value === undefined) return '';
 
-        if (forceEmptyToken == value) return '';
+        if (forceEmptyToken === value) return '';
 
         return value;
     }
@@ -110,18 +110,15 @@ export function sheetToKV(options: SheetToKVOptions) {
         // 第一列为主键
         let main_key = row[0];
 
-        function checkSpace(key: string) {
-            if (typeof key == 'string' && key.trim != null && key != key.trim()) {
                 key = key.trim();
+        function checkSpace(str: string) {
+            if (typeof str == 'string' && str.trim != null && str != str.trim()) {
                 console.warn(
                     cli.red(
                         `${main_key} 中的 ${key} 前后有空格，已自动去掉空格，请检查！如果要强行使用空格，请使用&nbsp;`
                     )
                 );
-                // 如果强行要写空格要写成 &nbsp;，这里把 &nbsp; 替换成空格
-                key = key.replace(/&nbsp;/g, ' ');
             }
-            return key;
         }
 
         main_key = checkSpace(main_key);
@@ -140,24 +137,24 @@ export function sheetToKV(options: SheetToKVOptions) {
                     checkSpace(key);
 
                     // 跳过没有的key
-                    if (key == null || key == undefined || key == ``) return;
+                    if (key === null || key === undefined || key === ``) return;
 
                     // 缩进
                     let indentStr = (indent || `\t`).repeat(indentLevel);
 
                     // 第一列为主键
-                    if (i == 0) {
+                    if (i === 0) {
                         indentLevel++;
                         return `${indentStr}"${main_key}" {`;
                     }
 
                     // 处理饰品的特殊键值对
-                    if (key == `AttachWearables[{]`) attachWearablesBlock = true;
+                    if (key === `AttachWearables[{]`) attachWearablesBlock = true;
                     if (attachWearablesBlock && key == '[}]') attachWearablesBlock = false;
 
                     // 处理技能的特殊键值对，现在只需要处理顶部key作为通用key，value为数组的情况
-                    if (key == `AbilityValues[{]`) abilityValuesBlock = true;
-                    if (abilityValuesBlock && key == '[}]') abilityValuesBlock = false;
+                    if (key === `AbilityValues[{]`) abilityValuesBlock = true;
+                    if (abilityValuesBlock && key === '[}]') abilityValuesBlock = false;
 
                     // 获取该单元格的值
                     let cell: string = row[i];
@@ -170,7 +167,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                         cell != undefined
                     ) {
                         // 如果输出中包含 { } 等，那么直接输出value，不加双引号
-                        if (cell != null && cell.toString().trimStart().startsWith('{')) {
+                        if (cell !== null && cell.toString().trimStart().startsWith('{')) {
                             return `${indentStr}"${key}" ${cell}`;
                         }
                         return `${indentStr}"${key}" { "ItemDef" "${cell}" }`;
@@ -178,8 +175,8 @@ export function sheetToKV(options: SheetToKVOptions) {
 
                     // 处理写excel文件中的本地化文本
                     if (key.includes(`#Loc`)) {
-                        if (cell == `` || cell == undefined) return;
-                        if (cell.trim && cell.trim() == ``) return;
+                        if (cell === `` || cell === undefined) return;
+                        if (cell.trim && cell.trim() === ``) return;
                         let locKey = key.replace(`#Loc`, ``).replace(`{}`, main_key);
                         // 保存对应的本地化tokens
                         locTokens.push({
@@ -191,7 +188,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                     }
 
                     if (abilityValuesBlock && key !== `AbilityValues[{]`) {
-                        if (cell == `` || cell == undefined) return;
+                        if (cell === `` || cell === undefined) return;
                         let values_key = '';
                         // 如果key不是数字，那么则作为key
                         if (isNaN(Number(key))) {
@@ -209,8 +206,8 @@ export function sheetToKV(options: SheetToKVOptions) {
 
                         // 如果key是 #LocValues，那么则作为本地化文本暂存
                         if (key == `#ValuesLoc`) {
-                            if (cell == `` || cell == undefined) return;
-                            if (cell.trim && cell.trim() == ``) return;
+                            if (cell === `` || cell === undefined) return;
+                            if (cell.trim && cell.trim() === ``) return;
                             // 暂存键值的本地化文本
                             locAbilitySpecial = cell;
                             return; // 不输出到kv文件中去
@@ -345,7 +342,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                     kv_data_str = `${kv_data_simple.join('\n')}`;
                 } else {
                     const kv_data_complex = kv_data.map((row) => {
-                        if (row[0] == `` || row[0] == null) return;
+                        if (row[0] === `` || row[0] === null) return;
                         return convert_row_to_kv(row, key_row);
                     });
                     kv_data_str = `${kv_data_complex.join('\n')}`;

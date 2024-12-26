@@ -42,6 +42,10 @@ export interface SheetToKVOptions {
     addonCSVDefaultLang?: string;
 }
 
+function isEmptyOrNullOrUndefined(value: any) {
+    return value === null || value === undefined || value === ``;
+}
+
 export function sheetToKV(options: SheetToKVOptions) {
     const {
         customPinyins = {},
@@ -136,7 +140,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                     checkSpace(key);
 
                     // 跳过没有的key
-                    if (key === null || key === undefined || key === ``) return;
+                    if (isEmptyOrNullOrUndefined(key)) return;
 
                     // 缩进
                     let indentStr = (indent || `\t`).repeat(indentLevel);
@@ -174,7 +178,7 @@ export function sheetToKV(options: SheetToKVOptions) {
 
                     // 处理写excel文件中的本地化文本
                     if (key.includes(`#Loc`)) {
-                        if (cell === `` || cell === undefined) return;
+                        if (isEmptyOrNullOrUndefined(cell)) return;
                         if (cell.trim && cell.trim() === ``) return;
                         let locKey = key.replace(`#Loc`, ``).replace(`{}`, main_key);
                         // 保存对应的本地化tokens
@@ -187,7 +191,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                     }
 
                     if (abilityValuesBlock && key !== `AbilityValues[{]`) {
-                        if (cell === `` || cell === undefined) return;
+                        if (isEmptyOrNullOrUndefined(cell)) return;
                         let values_key = '';
                         // 如果key不是数字，那么则作为key
                         if (isNaN(Number(key))) {
@@ -205,7 +209,7 @@ export function sheetToKV(options: SheetToKVOptions) {
 
                         // 如果key是 #LocValues，那么则作为本地化文本暂存
                         if (key == `#ValuesLoc`) {
-                            if (cell === `` || cell === undefined) return;
+                            if (isEmptyOrNullOrUndefined(cell)) return;
                             if (cell.trim && cell.trim() === ``) return;
                             // 暂存键值的本地化文本
                             locAbilitySpecial = cell;
@@ -241,7 +245,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                         return `${indentStr}}`;
                     }
 
-                    if ((cell === `` || cell === undefined) && !/^Ability[0-9]{1,2}/.test(key)) {
+                    if ((isEmptyOrNullOrUndefined(key)) && !/^Ability[0-9]{1,2}/.test(key)) {
                         return;
                     }
 
@@ -341,7 +345,7 @@ export function sheetToKV(options: SheetToKVOptions) {
                     kv_data_str = `${kv_data_simple.join('\n')}`;
                 } else {
                     const kv_data_complex = kv_data.map((row) => {
-                        if (row[0] === `` || row[0] === null) return;
+                        if (isEmptyOrNullOrUndefined(row[0])) return;
                         return convert_row_to_kv(row, key_row);
                     });
                     kv_data_str = `${kv_data_complex.join('\n')}`;

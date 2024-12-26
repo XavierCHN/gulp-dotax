@@ -110,18 +110,17 @@ export function sheetToKV(options: SheetToKVOptions) {
         // 第一列为主键
         let main_key = row[0];
 
-                key = key.trim();
         function checkSpace(str: string) {
             if (typeof str == 'string' && str.trim != null && str != str.trim()) {
                 console.warn(
                     cli.red(
-                        `${main_key} 中的 ${key} 前后有空格，已自动去掉空格，请检查！如果要强行使用空格，请使用&nbsp;`
+                        `${main_key} 中的 ${str} 前后有空格，请检查！`
                     )
                 );
             }
         }
 
-        main_key = checkSpace(main_key);
+        checkSpace(main_key);
 
         let attachWearablesBlock = false;
         let abilityValuesBlock = false;

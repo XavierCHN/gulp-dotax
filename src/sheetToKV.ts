@@ -42,6 +42,11 @@ export interface SheetToKVOptions {
     addonCSVDefaultLang?: string;
 }
 
+function isSimpleKV(key_row: string[]) {
+    const validKeys = key_row.filter((i) => i != null && i != '' && !i.includes('#Loc'));
+    return validKeys.length == 2;
+}
+
 function isEmptyOrNullOrUndefined(value: any) {
     return value === null || value === undefined || value === ``;
 }
@@ -338,7 +343,7 @@ export function sheetToKV(options: SheetToKVOptions) {
 
                 let kv_data_str = '';
 
-                if (key_row.length == 2 && autoSimpleKV) {
+                if (isSimpleKV(key_row) && autoSimpleKV) {
                     const kv_data_simple = kv_data.map((row) => {
                         return `\t"${row[0]}" "${row[1]}"`;
                     });

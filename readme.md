@@ -96,6 +96,20 @@ export interface SheetToKVOptions {
     addonCSVPath?: string;
     /** addon.csv输出的默认语言，默认为SChinese */
     addonCSVDefaultLang?: string;
+    /** KV文件的根节点名称，默认为 XLSXContent */
+    kvRootKey?: string;
+    /** 未知变量名前缀，当AbilityValues中的key无法识别时使用，默认为 unknown_var_ */
+    unknownVarPrefix?: string;
+    /** 本地化标记，用于识别需要输出到addon.csv的列，默认为 #Loc */
+    locTokenMarker?: string;
+    /** AbilityValues本地化标记，用于识别AbilityValues中的本地化文本，默认为 #ValuesLoc */
+    abilityValueLocMarker?: string;
+    /** 块开始标记，用于识别KV块的开始，默认为 [{] */
+    blockStartMarker?: string;
+    /** 块结束标记，用于识别KV块的结束，默认为 [}] */
+    blockEndMarker?: string;
+    /** 浮点数精度，用于控制输出的小数位数，默认为4 */
+    floatPrecision?: number;
 }
 ```
 
@@ -280,3 +294,35 @@ const create_image_precache =
 要注意的是，生成的css文件还需要手动引用到你的项目中，他们才会被编译
 
 而且，为了避免载入卡死，css文件会以500个一拆分的形式输出，所以如果有新增的 image_pcache*.css，也需要添加引用
+
+#### 参数说明
+
+```TypeScript
+export interface ImagePrecacheOptions {
+    /** 每个CSS文件包含的最大图片数量，默认为500 */
+    maxFilesPerGroup?: number;
+}
+```
+
+使用示例：
+
+```TypeScript
+const create_image_precache =
+    (watch: boolean = false) =>
+    () => {
+        const imageFiles = `${paths.panorama}/images/**/*.{jpg,png,psd}`;
+        const createImagePrecache = () => {
+            return gulp
+                .src(imageFiles)
+                .pipe(dotax.imagePrecacche(`content/panorama/images/`, {
+                    maxFilesPerGroup: 300  // 自定义每个CSS文件的图片数量
+                }))
+                .pipe(gulp.dest(paths.panorama));
+        };
+        if (watch) {
+            return gulp.watch(imageFiles, createImagePrecache);
+        } else {
+            return createImagePrecache();
+        }
+    };
+```

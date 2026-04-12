@@ -2,7 +2,13 @@ import Vinyl from 'vinyl';
 import path from 'path';
 import through2 from 'through2';
 
-export function imagePrecacche(root: string) {
+export interface ImagePrecacheOptions {
+    /** 每个CSS文件包含的最大图片数量，默认为500 */
+    maxFilesPerGroup?: number;
+}
+
+export function imagePrecacche(root: string, options?: ImagePrecacheOptions) {
+    const { maxFilesPerGroup = 500 } = options || {};
     let files: string[] = [];
     let firstFile: Vinyl;
     function collect(file: Vinyl, enc: any, next: Function) {
@@ -22,8 +28,8 @@ export function imagePrecacche(root: string) {
         files = files.sort();
 
         let fileGroups: string[][] = [];
-        for (let i = 0; i < files.length; i += 500) {
-            fileGroups.push(files.slice(i, i + 500));
+        for (let i = 0; i < files.length; i += maxFilesPerGroup) {
+            fileGroups.push(files.slice(i, i + maxFilesPerGroup));
         }
             
         fileGroups.forEach((files, i) => {

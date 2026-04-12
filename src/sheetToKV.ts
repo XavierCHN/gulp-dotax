@@ -40,6 +40,20 @@ export interface SheetToKVOptions {
     addonCSVPath?: string;
     /** addon.csv输出的默认语言，默认为SChinese */
     addonCSVDefaultLang?: string;
+    /** KV文件的根节点名称，默认为 XLSXContent */
+    kvRootKey?: string;
+    /** 未知变量名前缀，当AbilityValues中的key无法识别时使用，默认为 unknown_var_ */
+    unknownVarPrefix?: string;
+    /** 本地化标记，用于识别需要输出到addon.csv的列，默认为 #Loc */
+    locTokenMarker?: string;
+    /** AbilityValues本地化标记，用于识别AbilityValues中的本地化文本，默认为 #ValuesLoc */
+    abilityValueLocMarker?: string;
+    /** 块开始标记，用于识别KV块的开始，默认为 [{] */
+    blockStartMarker?: string;
+    /** 块结束标记，用于识别KV块的结束，默认为 [}] */
+    blockEndMarker?: string;
+    /** 浮点数精度，用于控制输出的小数位数，默认为4 */
+    floatPrecision?: number;
 }
 
 function isSimpleKV(key_row: string[]) {
@@ -65,6 +79,13 @@ export function sheetToKV(options: SheetToKVOptions) {
         aliasList = {},
         addonCSVPath = null,
         addonCSVDefaultLang = `SChinese`,
+        kvRootKey = 'XLSXContent',
+        unknownVarPrefix = 'unknown_var_',
+        locTokenMarker = '#Loc',
+        abilityValueLocMarker = '#ValuesLoc',
+        blockStartMarker = '[{]',
+        blockEndMarker = '[}]',
+        floatPrecision = 4,
     } = options;
 
     customPinyin(customPinyins);
@@ -100,9 +121,9 @@ export function sheetToKV(options: SheetToKVOptions) {
     function deal_with_kv_value(value: string): string {
         if (/^[0-9]+.?[0-9]*$/.test(value)) {
             let number = parseFloat(value);
-            // if this is not an integer, max 4 digits after dot
+            // if this is not an integer, use configured precision digits after dot
             if (number % 1 !== 0) {
-                value = number.toFixed(4);
+                value = number.toFixed(floatPrecision);
             }
         }
 
@@ -182,10 +203,10 @@ export function sheetToKV(options: SheetToKVOptions) {
                     }
 
                     // 处理写excel文件中的本地化文本
-                    if (key.includes(`#Loc`)) {
+                    if (key.includes(locTokenMarker)) {
                         if (isEmptyOrNullOrUndefined(cell)) return;
                         if (cell.trim && cell.trim() === ``) return;
-                        let locKey = key.replace(`#Loc`, ``).replace(`{}`, main_key);
+                        let locKey = key.replace(locTokenMarker, ``).replace(`{}`, main_key);
                         // 保存对应的本地化tokens
                         locTokens.push({
                             //TODO, 将Tokens修改为 addon.csv 第一行的第一个元素？
@@ -208,12 +229,12 @@ export function sheetToKV(options: SheetToKVOptions) {
                             cell = cell.replace(`${datas[0]} `, '');
                         }
                         if (values_key == '') {
-                            values_key = `unknown_var_${varIndex}`;
+                            values_key = `${unknownVarPrefix}${varIndex}`;
                             varIndex++;
                         }
 
-                        // 如果key是 #LocValues，那么则作为本地化文本暂存
-                        if (key == `#ValuesLoc`) {
+                        // 如果key是 abilityValueLocMarker，那么则作为本地化文本暂存
+                        if (key == abilityValueLocMarker) {
                             if (isEmptyOrNullOrUndefined(cell)) return;
                             if (cell.trim && cell.trim() === ``) return;
                             // 暂存键值的本地化文本
@@ -240,11 +261,11 @@ export function sheetToKV(options: SheetToKVOptions) {
                         return `${indentStr}"${values_key}" "${cell}"`;
                     }
 
-                    if (key.includes('[{]')) {
+                    if (key.includes(blockStartMarker)) {
                         indentLevel++;
-                        return `${indentStr}"${key.replace(`[{]`, ``)}" {`;
+                        return `${indentStr}"${key.replace(blockStartMarker, ``)}" {`;
                     }
-                    if (key.includes('[}]')) {
+                    if (key.includes(blockEndMarker)) {
                         indentLevel--;
                         indentStr = (indent || `\t`).repeat(indentLevel);
                         return `${indentStr}}`;
@@ -361,7 +382,7 @@ export function sheetToKV(options: SheetToKVOptions) {
 // ${file.basename} ${sheet_name}
 // SourceCode: https://github.com/XavierCHN/gulp-dotax/blob/master/src/sheetToKV.ts
 // Template: https://github.com/XavierCHN/x-template
-"XLSXContent"
+"${kvRootKey}"
 {
 ${kv_data_str}
 }

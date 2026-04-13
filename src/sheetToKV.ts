@@ -8,6 +8,7 @@ import { pinyin, customPinyin } from 'pinyin-pro';
 import { pushNewLinesToCSVFile } from './kvToLocalization';
 
 const cli = require('cli-color');
+const { version: PLUGIN_VERSION } = require('../package.json');
 
 const PLUGIN_NAME = 'gulp-dotax:sheetToKV';
 
@@ -66,6 +67,8 @@ function isEmptyOrNullOrUndefined(value: any) {
 }
 
 export function sheetToKV(options: SheetToKVOptions) {
+    console.log(cli.cyan(`${PLUGIN_NAME} v${PLUGIN_VERSION}`));
+
     const {
         customPinyins = {},
         sheetsIgnore = /^\s*$/,

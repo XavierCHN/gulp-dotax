@@ -404,7 +404,7 @@ ${kv_data_str}
                 genratedFiles.push(generaetdFileFullname);
 
                 // convert all line ending from CRLF TO LF
-                out_put.replace(/\r\n/g, '\n');
+                out_put = out_put.replace(/\r\n/g, '\n');
 
                 const kv_file = new Vinyl({
                     base: file.base,

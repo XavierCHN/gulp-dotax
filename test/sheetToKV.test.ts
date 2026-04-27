@@ -408,6 +408,84 @@ describe('sheetToKV', () => {
     });
 
     describe('KV file generation', () => {
+        it('should convert CRLF line endings to LF in output', async () => {
+            const transform = sheetToKV({});
+
+            const data = [
+                {
+                    name: 'test',
+                    data: [
+                        ['comment'],
+                        ['main_key', 'value_key'],
+                        ['test_unit', 'line1\r\nline2\r\nline3']
+                    ],
+                    options: {}
+                }
+            ];
+            const mockBuffer = xlsx.build(data);
+            const xlsxFile = new Vinyl({
+                cwd: '/test',
+                base: '/test',
+                path: '/test/test.xlsx',
+                contents: mockBuffer
+            });
+
+            return new Promise<void>((resolve, reject) => {
+                const resultFiles: Vinyl[] = [];
+                transform.on('data', (file: Vinyl) => {
+                    resultFiles.push(file);
+                });
+                transform.on('end', () => {
+                    expect(resultFiles.length).toBe(1);
+                    const content = resultFiles[0].contents?.toString() || '';
+                    expect(content).not.toContain('\r\n');
+                    resolve();
+                });
+                transform.on('error', reject);
+                transform.write(xlsxFile);
+                transform.end();
+            });
+        });
+
+        it('should preserve existing LF line endings as LF', async () => {
+            const transform = sheetToKV({});
+
+            const data = [
+                {
+                    name: 'test',
+                    data: [
+                        ['comment'],
+                        ['main_key', 'value_key'],
+                        ['test_unit', 'line1\nline2\nline3']
+                    ],
+                    options: {}
+                }
+            ];
+            const mockBuffer = xlsx.build(data);
+            const xlsxFile = new Vinyl({
+                cwd: '/test',
+                base: '/test',
+                path: '/test/test.xlsx',
+                contents: mockBuffer
+            });
+
+            return new Promise<void>((resolve, reject) => {
+                const resultFiles: Vinyl[] = [];
+                transform.on('data', (file: Vinyl) => {
+                    resultFiles.push(file);
+                });
+                transform.on('end', () => {
+                    expect(resultFiles.length).toBe(1);
+                    const content = resultFiles[0].contents?.toString() || '';
+                    expect(content).not.toContain('\r\n');
+                    resolve();
+                });
+                transform.on('error', reject);
+                transform.write(xlsxFile);
+                transform.end();
+            });
+        });
+
         it('should generate KV files with custom indentation', () => {
             const transform = sheetToKV({
                 indent: '\t'
